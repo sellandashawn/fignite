@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { ArrowRight, Calendar, MapPin, Users, Trophy, Mail, Phone, Zap, BarChart3, Heart } from "lucide-react"
+import { Header } from "@/components/header"
 
 export default function Home() {
   const [timeLeft, setTimeLeft] = useState({ days: 45, hours: 12, minutes: 30, seconds: 45 })
-  const [visibleEvents, setVisibleEvents] = useState(3)
+  const [visibleEvents, setVisibleEvents] = useState(6)
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -112,27 +113,7 @@ export default function Home() {
   return (
     <main className="bg-background text-foreground">
       {/* Navigation */}
-      <nav className="flex items-center justify-between px-8 py-6 border-b border-border">
-        <div className="text-2xl font-bold text-primary">GoSports</div>
-        <div className="hidden md:flex gap-8 items-center">
-          <a href="#events" className="text-sm hover:text-primary transition">
-            Events
-          </a>
-          <a href="#how" className="text-sm hover:text-primary transition">
-            How It Works
-          </a>
-          <a href="#about" className="text-sm hover:text-primary transition">
-            About
-          </a>
-          <a href="#contact" className="text-sm hover:text-primary transition">
-            Contact
-          </a>
-        </div>
-        <button className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:opacity-90 transition text-sm font-semibold">
-          Get Started
-        </button>
-      </nav>
-
+      <Header />
       {/* Hero Section with Integrated Countdown */}
       <section className="relative min-h-screen bg-gradient-to-b from-card to-background overflow-hidden">
         <div className="absolute inset-0 opacity-10">
@@ -142,14 +123,16 @@ export default function Home() {
         <div className="relative z-10 max-w-7xl mx-auto px-8 py-20">
           <div className="text-center mb-12">
             <div className="inline-block mb-6 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full">
-              <p className="text-primary font-semibold text-sm">ANNUAL CHAMPIONSHIP EVENT</p>
+              <p className="text-primary font-semibold text-sm">
+                ANNUAL CHAMPIONSHIP EVENT
+              </p>
             </div>
             <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight text-balance">
               The Biggest Championship Starts Soon
             </h1>
             <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
-              Join thousands of athletes worldwide for the most prestigious sports championship. Limited spots
-              available.
+              Join thousands of athletes worldwide for the most prestigious
+              sports championship. Limited spots available.
             </p>
 
             {/* Countdown in Hero */}
@@ -216,10 +199,13 @@ export default function Home() {
       <section id="how" className="py-24 px-8 bg-card border-y border-border">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-balance">What We Do</h2>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-balance">
+              What We Do
+            </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              GoSports connects athletes with extraordinary sporting experiences. We empower participants to discover,
-              register, and excel at events worldwide.
+              GoSports connects athletes with extraordinary sporting
+              experiences. We empower participants to discover, register, and
+              excel at events worldwide.
             </p>
           </div>
 
@@ -230,8 +216,9 @@ export default function Home() {
               </div>
               <h3 className="text-2xl font-bold mb-3">Discover Events</h3>
               <p className="text-muted-foreground">
-                Browse thousands of sporting events from marathons to championships. Filter by location, date, and sport
-                type to find your perfect match.
+                Browse thousands of sporting events from marathons to
+                championships. Filter by location, date, and sport type to find
+                your perfect match.
               </p>
             </div>
 
@@ -241,8 +228,9 @@ export default function Home() {
               </div>
               <h3 className="text-2xl font-bold mb-3">Connect & Compete</h3>
               <p className="text-muted-foreground">
-                Join a vibrant community of athletes from around the world. Network, share experiences, and find
-                training partners for your next challenge.
+                Join a vibrant community of athletes from around the world.
+                Network, share experiences, and find training partners for your
+                next challenge.
               </p>
             </div>
 
@@ -252,8 +240,9 @@ export default function Home() {
               </div>
               <h3 className="text-2xl font-bold mb-3">Track Progress</h3>
               <p className="text-muted-foreground">
-                Monitor your performance across events. Analyze stats, earn achievements, and watch yourself improve
-                with our comprehensive analytics dashboard.
+                Monitor your performance across events. Analyze stats, earn
+                achievements, and watch yourself improve with our comprehensive
+                analytics dashboard.
               </p>
             </div>
           </div>
@@ -265,8 +254,12 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-16">
             <div>
-              <h2 className="text-4xl md:text-5xl font-bold mb-2 text-balance">Upcoming Events</h2>
-              <p className="text-muted-foreground">Next 3 months of amazing sporting experiences</p>
+              <h2 className="text-4xl md:text-5xl font-bold mb-2 text-balance">
+                Upcoming Events
+              </h2>
+              <p className="text-muted-foreground">
+                Next 3 months of amazing sporting experiences
+              </p>
             </div>
             <a
               href="#"
@@ -304,7 +297,9 @@ export default function Home() {
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Users size={16} />
-                      <span className="text-sm">{event.participants} participants</span>
+                      <span className="text-sm">
+                        {event.participants} participants
+                      </span>
                     </div>
                   </div>
                   <button className="w-full bg-primary text-primary-foreground py-2 rounded-lg hover:opacity-90 transition font-semibold text-sm">
@@ -331,35 +326,45 @@ export default function Home() {
       {/* Why Choose GoSports */}
       <section className="py-24 px-8 bg-card border-y border-border">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-center mb-16">Why Choose GoSports?</h2>
+          <h2 className="text-4xl font-bold text-center mb-16">
+            Why Choose GoSports?
+          </h2>
           <div className="grid md:grid-cols-4 gap-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4 border border-primary/20">
                 <Trophy className="text-primary" size={32} />
               </div>
               <h3 className="font-bold text-lg mb-2">Premium Events</h3>
-              <p className="text-muted-foreground">Access to curated, high-quality sporting events</p>
+              <p className="text-muted-foreground">
+                Access to curated, high-quality sporting events
+              </p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4 border border-primary/20">
                 <Calendar className="text-primary" size={32} />
               </div>
               <h3 className="font-bold text-lg mb-2">Easy Registration</h3>
-              <p className="text-muted-foreground">Simple one-click registration for all events</p>
+              <p className="text-muted-foreground">
+                Simple one-click registration for all events
+              </p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4 border border-primary/20">
                 <Heart className="text-primary" size={32} />
               </div>
               <h3 className="font-bold text-lg mb-2">Global Community</h3>
-              <p className="text-muted-foreground">Connect with athletes from around the world</p>
+              <p className="text-muted-foreground">
+                Connect with athletes from around the world
+              </p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4 border border-primary/20">
                 <BarChart3 className="text-primary" size={32} />
               </div>
               <h3 className="font-bold text-lg mb-2">Track Progress</h3>
-              <p className="text-muted-foreground">Monitor your performance and achievements</p>
+              <p className="text-muted-foreground">
+                Monitor your performance and achievements
+              </p>
             </div>
           </div>
         </div>
@@ -368,12 +373,19 @@ export default function Home() {
       {/* Testimonials */}
       <section className="py-24 px-8">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-center mb-4">What Athletes Say</h2>
-          <p className="text-center text-muted-foreground mb-16">Join thousands of satisfied participants</p>
+          <h2 className="text-4xl font-bold text-center mb-4">
+            What Athletes Say
+          </h2>
+          <p className="text-center text-muted-foreground mb-16">
+            Join thousands of satisfied participants
+          </p>
 
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-card rounded-xl p-8 border border-border hover:border-primary transition">
+              <div
+                key={index}
+                className="bg-card rounded-xl p-8 border border-border hover:border-primary transition"
+              >
                 <div className="flex items-center gap-4 mb-4">
                   <img
                     src={testimonial.image || "/placeholder.svg"}
@@ -382,10 +394,14 @@ export default function Home() {
                   />
                   <div>
                     <h4 className="font-bold">{testimonial.name}</h4>
-                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {testimonial.role}
+                    </p>
                   </div>
                 </div>
-                <p className="text-muted-foreground italic">"{testimonial.quote}"</p>
+                <p className="text-muted-foreground italic">
+                  "{testimonial.quote}"
+                </p>
               </div>
             ))}
           </div>
@@ -393,28 +409,37 @@ export default function Home() {
       </section>
 
       {/* Message from Director */}
-      <section id="about" className="py-24 px-8 bg-gradient-to-r from-primary/5 to-transparent border-y border-border">
+      <section
+        id="about"
+        className="py-24 px-8 bg-gradient-to-r from-primary/5 to-transparent border-y border-border"
+      >
         <div className="max-w-4xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-4xl font-bold mb-6">A Message from Our Founder</h2>
+              <h2 className="text-4xl font-bold mb-6">
+                A Message from Our Founder
+              </h2>
               <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-                "At GoSports, we believe in the transformative power of sports. Our mission is to break down barriers
-                between athletes and opportunities, creating a world where anyone can discover their next challenge,
-                connect with like-minded competitors, and achieve their personal best."
+                "At GoSports, we believe in the transformative power of sports.
+                Our mission is to break down barriers between athletes and
+                opportunities, creating a world where anyone can discover their
+                next challenge, connect with like-minded competitors, and
+                achieve their personal best."
               </p>
               <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-                "Whether you're a seasoned marathoner or trying your first triathlon, GoSports is built for you. We're
-                not just a platform—we're a community of champions pushing each other to greatness."
+                "Whether you're a seasoned marathoner or trying your first
+                triathlon, GoSports is built for you. We're not just a
+                platform—we're a community of champions pushing each other to
+                greatness."
               </p>
               <div>
-                <p className="font-bold text-lg">John Anderson</p>
+                <p className="font-bold text-lg">Shankar Retinam</p>
                 <p className="text-muted-foreground">Founder & CEO, GoSports</p>
               </div>
             </div>
             <div className="relative">
               <img
-                src="/professional-man-coach.jpg"
+                src="/images/shankar.png"
                 alt="Founder John Anderson"
                 className="rounded-xl w-full object-cover"
               />
@@ -431,9 +456,12 @@ export default function Home() {
       <section id="contact" className="py-24 px-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-balance">Get in Touch</h2>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-balance">
+              Get in Touch
+            </h2>
             <p className="text-lg text-muted-foreground">
-              Have questions? Our team is here to help you find the perfect event.
+              Have questions? Our team is here to help you find the perfect
+              event.
             </p>
           </div>
 
@@ -471,8 +499,13 @@ export default function Home() {
                 <MapPin className="text-primary" size={24} />
               </div>
               <h3 className="font-bold text-lg mb-2">Office</h3>
-              <p className="text-muted-foreground mb-4">123 Sports Ave, NY 10001</p>
-              <a href="#" className="text-primary hover:text-primary/80 transition font-semibold text-sm">
+              <p className="text-muted-foreground mb-4">
+                123 Sports Ave, NY 10001
+              </p>
+              <a
+                href="#"
+                className="text-primary hover:text-primary/80 transition font-semibold text-sm"
+              >
                 Get Directions
               </a>
             </div>
@@ -483,7 +516,9 @@ export default function Home() {
             <form className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Name</label>
+                  <label className="block text-sm font-semibold mb-2">
+                    Name
+                  </label>
                   <input
                     type="text"
                     placeholder="Your name"
@@ -491,7 +526,9 @@ export default function Home() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Email</label>
+                  <label className="block text-sm font-semibold mb-2">
+                    Email
+                  </label>
                   <input
                     type="email"
                     placeholder="your@email.com"
@@ -500,7 +537,9 @@ export default function Home() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-2">Subject</label>
+                <label className="block text-sm font-semibold mb-2">
+                  Subject
+                </label>
                 <input
                   type="text"
                   placeholder="How can we help?"
@@ -508,7 +547,9 @@ export default function Home() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-2">Message</label>
+                <label className="block text-sm font-semibold mb-2">
+                  Message
+                </label>
                 <textarea
                   placeholder="Tell us more about your inquiry..."
                   rows={5}
@@ -528,7 +569,8 @@ export default function Home() {
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-4xl font-bold mb-6">Ready to Join the Action?</h2>
           <p className="text-lg mb-8 opacity-95">
-            Sign up today and start your sports journey. Access exclusive events and connect with athletes worldwide.
+            Sign up today and start your sports journey. Access exclusive events
+            and connect with athletes worldwide.
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             <button className="bg-primary-foreground text-primary px-8 py-3 rounded-lg hover:opacity-90 transition font-semibold">
@@ -547,7 +589,9 @@ export default function Home() {
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div>
               <h4 className="font-bold mb-4">GoSports</h4>
-              <p className="text-muted-foreground text-sm">Connecting athletes and events worldwide</p>
+              <p className="text-muted-foreground text-sm">
+                Connecting athletes and events worldwide
+              </p>
             </div>
             <div>
               <h4 className="font-bold mb-4">Product</h4>
@@ -627,5 +671,5 @@ export default function Home() {
         </div>
       </footer>
     </main>
-  )
+  );
 }
