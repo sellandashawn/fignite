@@ -98,7 +98,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
   return (
     <main className="bg-background text-foreground">
       {/* Navigation */}
-     <Header />
+      <Header />
 
       {/* Breadcrumb */}
       <div className="px-8 py-4 border-b border-border flex items-center gap-2 text-sm text-muted-foreground">
@@ -116,12 +116,18 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
           <div className="md:col-span-2">
             {/* Hero Image */}
             <div className="relative h-96 md:h-[500px] rounded-xl overflow-hidden mb-8 bg-muted">
-              <img src={event.image || "/placeholder.svg"} alt={event.title} className="w-full h-full object-cover" />
+              <img
+                src={event.image || "/placeholder.svg"}
+                alt={event.title}
+                className="w-full h-full object-cover"
+              />
             </div>
 
             {/* Event Title & Meta */}
             <div className="mb-8">
-              <h1 className="text-3xl md:text-4xl font-bold mb-4">{event.title}</h1>
+              <h1 className="text-3xl md:text-4xl font-bold mb-4">
+                {event.title}
+              </h1>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <div className="bg-card p-4 rounded-lg border border-border">
@@ -158,13 +164,18 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
             {/* Description */}
             <div className="mb-8">
               <h2 className="text-2xl font-bold mb-4">About This Event</h2>
-              <p className="text-muted-foreground leading-relaxed mb-6">{event.description}</p>
+              <p className="text-muted-foreground leading-relaxed mb-6">
+                {event.description}
+              </p>
 
               <h3 className="text-xl font-bold mb-4">What to Expect</h3>
               <ul className="space-y-3">
                 {event.details.map((detail: string, idx: number) => (
                   <li key={idx} className="flex items-start gap-3">
-                    <Trophy size={20} className="text-primary flex-shrink-0 mt-1" />
+                    <Trophy
+                      size={20}
+                      className="text-primary flex-shrink-0 mt-1"
+                    />
                     <span className="text-muted-foreground">{detail}</span>
                   </li>
                 ))}
@@ -176,8 +187,13 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
               <h2 className="text-2xl font-bold mb-4">Event Schedule</h2>
               <div className="space-y-3">
                 {event.schedule.map((item: any, idx: number) => (
-                  <div key={idx} className="flex items-start gap-4 p-4 bg-card rounded-lg border border-border">
-                    <div className="text-primary font-bold whitespace-nowrap">{item.time}</div>
+                  <div
+                    key={idx}
+                    className="flex items-start gap-4 p-4 bg-card rounded-lg border border-border"
+                  >
+                    <div className="text-primary font-bold whitespace-nowrap">
+                      {item.time}
+                    </div>
                     <div className="text-muted-foreground">{item.activity}</div>
                   </div>
                 ))}
@@ -204,14 +220,20 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
                   <span className="font-bold text-lg">{event.price}</span>
                 </div> */}
                 <div className="border-t border-border pt-3 flex justify-between items-center">
-                  <span className="text-muted-foreground font-semibold">Sub Total</span>
-                  <span className="font-bold text-lg text-primary">${totalPrice}</span>
+                  <span className="text-muted-foreground font-semibold">
+                    Sub Total
+                  </span>
+                  <span className="font-bold text-lg text-primary">
+                    ${totalPrice}
+                  </span>
                 </div>
               </div>
 
               {/* Quantity Selector */}
               <div>
-                <label className="block text-sm font-semibold mb-3">Quantity</label>
+                <label className="block text-sm font-semibold mb-3">
+                  Quantity
+                </label>
                 <div className="flex items-center gap-4 bg-background rounded-lg p-3">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -222,7 +244,11 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
                   <input
                     type="number"
                     value={quantity}
-                    onChange={(e) => setQuantity(Math.max(1, Number.parseInt(e.target.value) || 1))}
+                    onChange={(e) =>
+                      setQuantity(
+                        Math.max(1, Number.parseInt(e.target.value) || 1)
+                      )
+                    }
                     className="flex-1 bg-transparent text-center font-bold outline-none"
                   />
                   <button
@@ -235,12 +261,13 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
               </div>
 
               {/* Get Tickets Button */}
-              <button className="w-full bg-primary text-primary-foreground py-3 rounded-lg hover:opacity-90 transition font-bold text-lg">
-                GET TICKETS
-              </button>
-
+              <Link href={`/events/${event.id}/get-tickets`}>
+                <button className="w-full bg-primary text-primary-foreground py-3 rounded-lg hover:opacity-90 transition font-bold text-lg">
+                  GET TICKETS
+                </button>
+              </Link>
               {/* Add to Calendar */}
-              <button className="w-full border-2 border-primary text-primary py-2 rounded-lg hover:bg-primary/10 transition font-semibold flex items-center justify-center gap-2">
+              <button className="w-full border-2 border-primary text-primary py-2 mt-3 rounded-lg hover:bg-primary/10 transition font-semibold flex items-center justify-center gap-2">
                 <Calendar size={18} />
                 Add To Calendar
               </button>
@@ -297,7 +324,9 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div>
               <h4 className="font-bold mb-4">GoSports</h4>
-              <p className="text-muted-foreground text-sm">Connecting athletes and events worldwide</p>
+              <p className="text-muted-foreground text-sm">
+                Connecting athletes and events worldwide
+              </p>
             </div>
             <div>
               <h4 className="font-bold mb-4">Product</h4>
@@ -351,5 +380,5 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
         </div>
       </footer>
     </main>
-  )
+  );
 }
