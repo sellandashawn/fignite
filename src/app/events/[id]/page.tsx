@@ -1,12 +1,15 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { MapPin, Calendar, Users, Share2, Clock, Trophy, Plus, Minus, Mail, Phone, MessageSquare } from "lucide-react"
-import Link from "next/link"
-import { Header } from "@/components/header"
+import { useState, useEffect } from "react";
+import { MapPin, Calendar, Users, Share2, Clock, Trophy, Plus, Minus, Mail, Phone, MessageSquare } from "lucide-react";
+import Link from "next/link";
+import { Header } from "@/components/header";
+import { getEventById } from "../../api/event";
 
-export default function EventDetailPage({ params }: { params: { id: string } }) {
-  const [quantity, setQuantity] = useState(1)
+export default function EventDetailPage({ params }: { params: { id: string }; }) {
+  const [quantity, setQuantity] = useState(1);
+  const [eventData, setEventData] = useState<any>(null);
+  const [eventId, setEventId] = useState<string | null>(null);
 
   const events: { [key: string]: any } = {
     "1": {
@@ -93,7 +96,43 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
 
   const event = events[params.id] || events["1"]
 
-  const totalPrice = (Number.parseFloat(event.price.replace("$", "")) * quantity).toFixed(2)
+  useEffect(() => {
+    const fetchEventData = async () => {
+      const resolvedParams = await params;
+      const eventId = resolvedParams.id;
+      setEventId(eventId);
+    };
+
+    fetchEventData();
+  }, [params]);
+
+  useEffect(() => {
+    if (eventId) {
+      const fetchEventData = async () => {
+        try {
+          const data = await getEventById(eventId);
+          setEventData(data.event);
+        } catch (error) {
+          console.error("Error fetching event data:", error);
+        }
+      };
+      fetchEventData();
+    }
+  }, [eventId]);
+
+  console.log("Event Data:", eventData);
+  if (!eventData) {
+    return <div className="flex justify-center items-center min-h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-muted-foreground">Loading event...</p>
+      </div>
+    </div>;
+  }
+
+  const totalPrice = (
+    Number.parseFloat(eventData.perTicketPrice) * quantity
+  ).toFixed(2);
 
   return (
     <main className="bg-background text-foreground">
@@ -117,8 +156,8 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
             {/* Hero Image */}
             <div className="relative h-96 md:h-[500px] rounded-xl overflow-hidden mb-8 bg-muted">
               <img
-                src={event.image || "/placeholder.svg"}
-                alt={event.title}
+                src={eventData.image || "/placeholder.svg"}
+                alt={eventData.eventName}
                 className="w-full h-full object-cover"
               />
             </div>
@@ -126,7 +165,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
             {/* Event Title & Meta */}
             <div className="mb-8">
               <h1 className="text-3xl md:text-4xl font-bold mb-4">
-                {event.title}
+                {eventData.eventName}
               </h1>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -135,28 +174,28 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
                     <MapPin size={16} />
                     <span className="text-xs font-semibold">LOCATION</span>
                   </div>
-                  <p className="font-bold">{event.location}</p>
+                  <p className="font-bold">{eventData.venue}</p>
                 </div>
                 <div className="bg-card p-4 rounded-lg border border-border">
                   <div className="flex items-center gap-2 text-muted-foreground mb-2">
                     <Calendar size={16} />
                     <span className="text-xs font-semibold">DATE</span>
                   </div>
-                  <p className="font-bold text-sm">{event.date}</p>
+                  <p className="font-bold text-sm">{new Date(eventData.date).toLocaleDateString()}</p>
                 </div>
                 <div className="bg-card p-4 rounded-lg border border-border">
                   <div className="flex items-center gap-2 text-muted-foreground mb-2">
                     <Clock size={16} />
                     <span className="text-xs font-semibold">TIME</span>
                   </div>
-                  <p className="font-bold text-sm">{event.time}</p>
+                  <p className="font-bold text-sm">{eventData.time}</p>
                 </div>
                 <div className="bg-card p-4 rounded-lg border border-border">
                   <div className="flex items-center gap-2 text-muted-foreground mb-2">
                     <Users size={16} />
                     <span className="text-xs font-semibold">PARTICIPANTS</span>
                   </div>
-                  <p className="font-bold">{event.participants}</p>
+                  <p className="font-bold">{eventData.ticketStatus.maximumOccupancy}</p>
                 </div>
               </div>
             </div>
@@ -165,18 +204,15 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
             <div className="mb-8">
               <h2 className="text-2xl font-bold mb-4">About This Event</h2>
               <p className="text-muted-foreground leading-relaxed mb-6">
-                {event.description}
+                {eventData.description}
               </p>
 
               <h3 className="text-xl font-bold mb-4">What to Expect</h3>
               <ul className="space-y-3">
-                {event.details.map((detail: string, idx: number) => (
+                {eventData?.agenda?.map((detail: string, idx: number) => (
                   <li key={idx} className="flex items-start gap-3">
-                    <Trophy
-                      size={20}
-                      className="text-primary flex-shrink-0 mt-1"
-                    />
-                    <span className="text-muted-foreground">{detail}</span>
+                    <Trophy size={20} className="text-primary flex-shrink-0 mt-1" />
+                    <span className="text-muted-foreground">{detail.time} {detail.activity}</span>
                   </li>
                 ))}
               </ul>
@@ -186,7 +222,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
             <div className="mb-8">
               <h2 className="text-2xl font-bold mb-4">Event Schedule</h2>
               <div className="space-y-3">
-                {event.schedule.map((item: any, idx: number) => (
+                {eventData?.agenda?.map((item: any, idx: number) => (
                   <div
                     key={idx}
                     className="flex items-start gap-4 p-4 bg-card rounded-lg border border-border"
@@ -194,7 +230,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
                     <div className="text-primary font-bold whitespace-nowrap">
                       {item.time}
                     </div>
-                    <div className="text-muted-foreground">{item.activity}</div>
+                    <div className="text-muted-foreground">{item.activity} { }</div>
                   </div>
                 ))}
               </div>
@@ -207,13 +243,13 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
             <div className="bg-card rounded-xl border border-border p-8 sticky top-24 space-y-6">
               <div>
                 <h3 className="text-xl font-bold mb-2">Tickets</h3>
-                <p className="text-muted-foreground text-sm">{event.title}</p>
+                <p className="text-muted-foreground text-sm">{eventData.eventName}</p>
               </div>
 
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Ticket Price</span>
-                  <span className="font-bold text-lg">{event.price}</span>
+                  <span className="font-bold text-lg">$ {eventData.perTicketPrice}</span>
                 </div>
                 {/* <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Ticket Price</span>
@@ -224,16 +260,14 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
                     Sub Total
                   </span>
                   <span className="font-bold text-lg text-primary">
-                    ${totalPrice}
+                    $ {totalPrice}
                   </span>
                 </div>
               </div>
 
               {/* Quantity Selector */}
               <div>
-                <label className="block text-sm font-semibold mb-3">
-                  Quantity
-                </label>
+                <label className="block text-sm font-semibold mb-3">Quantity</label>
                 <div className="flex items-center gap-4 bg-background rounded-lg p-3">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -245,9 +279,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
                     type="number"
                     value={quantity}
                     onChange={(e) =>
-                      setQuantity(
-                        Math.max(1, Number.parseInt(e.target.value) || 1)
-                      )
+                      setQuantity(Math.max(1, Number.parseInt(e.target.value) || 1))
                     }
                     className="flex-1 bg-transparent text-center font-bold outline-none"
                   />
@@ -261,7 +293,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
               </div>
 
               {/* Get Tickets Button */}
-              <Link href={`/events/${event.id}/get-tickets`}>
+              <Link href={`/events/${eventData.id}/get-tickets`}>
                 <button className="w-full bg-primary text-primary-foreground py-3 rounded-lg hover:opacity-90 transition font-bold text-lg">
                   GET TICKETS
                 </button>

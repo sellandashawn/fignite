@@ -1,15 +1,47 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { MapPin, Users, Calendar, Search, SlidersHorizontal, ChevronDown } from "lucide-react"
-import Link from "next/link"
-import { Header } from "@/components/header"
+import { useState, useEffect } from "react";
+import {
+  MapPin,
+  Users,
+  Calendar,
+  Search,
+  SlidersHorizontal,
+  ChevronDown,
+} from "lucide-react";
+import Link from "next/link";
+import { Header } from "@/components/header";
+import { getAllEvents } from "../api/event";
 
 export default function EventsPage() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [sortBy, setSortBy] = useState("upcoming")
-  const [filterOpen, setFilterOpen] = useState(false)
-  const [selectedSport, setSelectedSport] = useState("all")
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("upcoming");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedSport, setSelectedSport] = useState("all");
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoading(true);
+        const response = await getAllEvents();
+        console.log("asa", response);
+        if (response && response.events) {
+          setEvents(response.events);
+        } else {
+          console.error("Unexpected response structure:", response);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    fetchEvents();
+    setLoading(false);
+  }, []);
+
+  console.log("Events ", events);
 
   const allEvents = [
     {
@@ -78,23 +110,34 @@ export default function EventsPage() {
       sport: "CrossFit",
       price: "$95",
     },
-  ]
+  ];
 
-  const filteredEvents = allEvents
+  const filteredEvents = events
     .filter((event) => {
       const matchesSearch =
-        event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        event.location.toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesSport = selectedSport === "all" || event.sport === selectedSport
-      return matchesSearch && matchesSport
+        event.eventName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.venue?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.category?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesSport =
+        selectedSport === "all" || event.category === selectedSport;
+
+      return matchesSearch && matchesSport;
     })
     .sort((a, b) => {
-      if (sortBy === "upcoming") return 0
-      if (sortBy === "newest") return b.id - a.id
-      return 0
-    })
+      if (sortBy === "upcoming") {
+        return new Date(a.date) - new Date(b.date);
+      }
+      if (sortBy === "newest") {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+      return 0;
+    });
 
-  const sports = ["all", "Running", "Volleyball", "Cycling", "Triathlon", "Tennis", "CrossFit"]
+  const sports = [
+    "all",
+    ...new Set(events.map((event) => event.category).filter(Boolean)),
+  ];
 
   return (
     <main className="bg-background text-foreground">
@@ -180,86 +223,109 @@ export default function EventsPage() {
       </section>
 
       {/* Events Grid */}
-      <section className="py-12 px-8">
-        <div className="max-w-7xl mx-auto">
-          {filteredEvents.length > 0 ? (
-            <>
-              <div className="grid md:grid-cols-3 gap-8 mb-12">
-                {filteredEvents.map((event) => (
-                  <Link
-                    key={event.id}
-                    href={`/events/${event.id}`}
-                    className="bg-card rounded-xl overflow-hidden border border-border hover:border-primary transition group cursor-pointer"
-                  >
-                    <div className="relative h-56 overflow-hidden bg-muted">
-                      <img
-                        src={event.image || "/placeholder.svg"}
-                        alt={event.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
-                      />
-                      {event.isSpecial && (
-                        <div className="absolute top-4 right-4 bg-[#000000] text-primary-foreground px-3 py-1 rounded-full text-xs font-bold">
-                          Completed
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-6">
-                      <h3 className="text-lg font-bold mb-3 line-clamp-2 group-hover:text-primary transition">
-                        {event.title}
-                      </h3>
-                      <div className="space-y-3 mb-4">
-                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                          <MapPin size={16} className="flex-shrink-0" />
-                          <span>{event.location}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                          <Calendar size={16} className="flex-shrink-0" />
-                          <span>{event.date}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                          <Users size={16} className="flex-shrink-0" />
-                          <span>{event.participants} participating</span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center pt-4 border-t border-border">
-                        <span className="font-bold text-primary">
-                          {event.price}
-                        </span>
-                        <button className="text-primary hover:text-primary/80 transition font-semibold text-sm">
-                          ATTEND
-                        </button>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-
-              {filteredEvents.length > 6 && (
-                <div className="text-center">
-                  <button className="bg-primary text-primary-foreground px-8 py-3 rounded-lg hover:opacity-90 transition font-semibold">
-                    View More
-                  </button>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="text-center py-16">
-              <p className="text-xl text-muted-foreground mb-4">
-                No events found matching your criteria
-              </p>
-              <button
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedSport("all");
-                }}
-                className="text-primary hover:text-primary/80 transition font-semibold"
-              >
-                Clear filters
-              </button>
-            </div>
-          )}
+      {loading ? (
+        <div className="flex justify-center items-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading events...</p>
+          </div>
         </div>
-      </section>
+      ) : (
+        <section className="py-12 px-8">
+          <div className="max-w-7xl mx-auto">
+            {filteredEvents.length > 0 ? (
+              <>
+                <div className="grid md:grid-cols-3 gap-8 mb-12">
+                  {filteredEvents.map((event) => (
+                    <Link
+                      key={event.id}
+                      href={`/events/${event.id}`}
+                      className="bg-card rounded-xl overflow-hidden border border-border hover:border-primary transition group cursor-pointer"
+                    >
+                      <div className="relative h-56 overflow-hidden bg-muted">
+                        <img
+                          src={event.image || "/placeholder.svg"}
+                          alt={event.eventName}
+                          className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
+                        />
+                        <div
+                          className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold ${
+                            event.status === "completed"
+                              ? "bg-green-500 text-white"
+                              : event.status === "ongoing"
+                              ? "bg-blue-500 text-white"
+                              : event.status === "cancelled"
+                              ? "bg-red-500 text-white"
+                              : "bg-primary text-primary-foreground"
+                          }`}
+                        >
+                          {event.status?.charAt(0).toUpperCase() +
+                            event.status?.slice(1) || "Upcoming"}
+                        </div>
+                      </div>
+                      <div className="p-6">
+                        <h3 className="text-lg font-bold mb-3 line-clamp-2 group-hover:text-primary transition">
+                          {event.eventName}
+                        </h3>
+                        <div className="space-y-3 mb-4">
+                          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                            <MapPin size={16} className="flex-shrink-0" />
+                            <span>{event.venue}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                            <Calendar size={16} className="flex-shrink-0" />
+                            <span>
+                              {new Date(event.date).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                            <Users size={16} className="flex-shrink-0" />
+                            <span>
+                              {event.ticketStatus.maximumOccupancy}{" "}
+                              participating
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center pt-4 border-t border-border">
+                          <span className="font-bold text-primary">
+                            $ {event.perTicketPrice}
+                          </span>
+                          <button className="text-primary hover:text-primary/80 transition font-semibold text-sm">
+                            ATTEND
+                          </button>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+
+                {filteredEvents.length > 6 && (
+                  <div className="text-center">
+                    <button className="bg-primary text-primary-foreground px-8 py-3 rounded-lg hover:opacity-90 transition font-semibold">
+                      View More
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-16">
+                <p className="text-xl text-muted-foreground mb-4">
+                  No events found matching your criteria
+                </p>
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSelectedSport("all");
+                  }}
+                  className="text-primary hover:text-primary/80 transition font-semibold"
+                >
+                  Clear filters
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* CTA Section */}
       {/* <section className="py-24 px-8 bg-primary text-primary-foreground">
