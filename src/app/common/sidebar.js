@@ -1,9 +1,11 @@
 "use client";
 
-import React from 'react';
-import { LayoutDashboard, Calendar, CreditCard, Users } from 'lucide-react';
+import React, { useContext } from 'react';
+import { LayoutDashboard, Calendar, CreditCard, Users, LogOut } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
 
 export default function Sidebar({ activeMenu, setActiveMenu }) {
+  const { user, logout } = useContext(AuthContext);
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -14,19 +16,18 @@ export default function Sidebar({ activeMenu, setActiveMenu }) {
 
   return (
     <div className="w-[70] min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white p-6 shadow-2xl border-r border-slate-700">
-      <div className="mb-8">
-        <div className="relative">
-          <img
-            src="https://tse2.mm.bing.net/th/id/OIP.eOhGjcSYqkkJ7O_7rzNWXwHaHa?pid=ImgDet&w=184&h=184&c=7&dpr=1.3&o=7&rm=3"
-            alt="logo"
-            className="relative w-24 h-24 mx-auto rounded-full object-cover border-2 border-slate-700"
-          />
+      <div className="my-8">
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/30">
+            <span className="text-white font-bold text-sm">GS</span>
+          </div>
+          <span className="font-bold text-xl text-white">GoSports</span>
         </div>
+        <p className="text-center text-slate-400 text-sm">Admin Portal</p>
       </div>
 
       {/* Navigation Menu */}
       <nav className="space-y-2">
-        <h1 className='font-bold text-lg text-center my-8'>Admin Panel</h1>
         {menuItems.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -40,6 +41,17 @@ export default function Sidebar({ activeMenu, setActiveMenu }) {
             <span className="font-medium ">{label}</span>
           </button>
         ))}
+
+        {/* Logout Button - Only show if user is logged in */}
+        {user && (
+          <button
+            onClick={logout}
+            className="w-full px-4 py-3 rounded-lg flex items-center gap-3 transition-all duration-300 text-slate-300 hover:text-white hover:bg-slate-700/50 mt-5"
+          >
+            <LogOut size={20} />
+            <span className="font-medium">Logout</span>
+          </button>
+        )}
       </nav>
     </div>
   );
