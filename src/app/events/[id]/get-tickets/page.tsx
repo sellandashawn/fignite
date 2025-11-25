@@ -13,7 +13,7 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
   const [eventData, setEventData] = useState<any>(null);
   const [eventId, setEventId] = useState<string | null>(null);
   const searchParams = useSearchParams();
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const quantity = parseInt(searchParams.get('quantity') || '1');
 
 
@@ -61,13 +61,87 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target
-    setForm({ ...form, [name]: type === "checkbox" ? checked : value })
+    const { name, value, type } = e.target
+    const checked = (e.target as HTMLInputElement).checked;
+    setForm({ ...form, [name]: type === "checkbox" ? checked : value });
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    router.push("/payment-success") // or your payment page
+  // Function to save registration with pending status
+  const saveRegistration = async () => {
+    const registrationData = {
+      eventId: eventId,
+      eventName: eventData.eventName,
+      eventDate: eventData.date,
+      eventvenue: eventData.venue,
+      eventtime: eventData.time,
+      eventimage: eventData.image,
+      quantity: quantity,
+      totalAmount: total,
+      status: "pending",
+      billingInfo: {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone,
+      },
+      attendeeInfo: {
+        name: form.name,
+        idNumber: form.idNumber,
+        age: form.age,
+        gender: form.gender,
+        email: form.attendeeEmail,
+        tshirtSize: form.tshirtSize,
+        raceCategory: form.raceCategory,
+        teamName: form.teamName,
+      },
+      paymentInfo: {
+        subtotal: eventData.perTicketPrice * quantity,
+        total: total,
+        status: "pending",
+      },
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      // Generate a unique registration ID
+      const registrationId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+      // Save to localStorage 
+      const newRegistration = {
+        id: registrationId,
+        ...registrationData
+      };
+
+      localStorage.setItem('currentRegistration', JSON.stringify(newRegistration));
+
+      console.log('Registration saved with ID:', registrationId);
+      return registrationId;
+
+    } catch (error) {
+      console.error('Error saving registration:', error);
+      throw error;
+    }
+  }
+
+  const handleProceedToPayment = async () => {
+    // Validate required fields
+    if (!form.firstName || !form.lastName || !form.email || !form.phone ||
+      !form.name || !form.idNumber || !form.agree) {
+      alert("Please fill in all required fields and agree to the terms.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const registrationId = await saveRegistration();
+      router.push(`/payment?registrationId=${registrationId}&eventId=${eventId}&quantity=${quantity}`);
+    } catch (error) {
+      console.error('Error proceeding to payment:', error);
+      alert('Failed to save registration. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   const event = {
@@ -107,7 +181,7 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
         <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-10">
           {/* Left: Form */}
           <form
-            onSubmit={handleSubmit}
+            onSubmit={(e) => e.preventDefault()}
             className="md:col-span-2 bg-card border border-border rounded-xl p-8 space-y-8"
           >
             {/* Billing Info */}
@@ -176,6 +250,7 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
                 <input
                   name="age"
                   placeholder="Age"
+                  type="number"
                   value={form.age}
                   onChange={handleChange}
                   className="border border-border rounded-md px-4 py-2 bg-background"
@@ -190,7 +265,6 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
                   <option value="male">Male</option>
                   <option value="female">Female</option>
                   <option value="other">Other</option>
-                  <option value="prefer-not-to-say">Prefer not to say</option>
                 </select>
                 <input
                   name="attendeeEmail"
@@ -201,12 +275,12 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
                 />
                 <select
                   name="tshirtSize"
-                  value={form.availableTshirtSizes}
+                  value={form.tshirtSize}
                   onChange={handleChange}
                   className="border border-border rounded-md px-4 py-2 bg-background"
                 >
                   <option value="">Select T shirt Size</option>
-                  {eventData.availableTshirtSizes?.map((size, index) => (
+                  {eventData.availableTshirtSizes?.map((size: string, index: number) => (
                     <option key={index} value={size}>
                       {size}
                     </option>
@@ -219,7 +293,7 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
                   className="border border-border rounded-md px-4 py-2 bg-background"
                 >
                   <option value="">Select Race Category</option>
-                  {eventData.raceCategories?.map((category, index) => (
+                  {eventData.raceCategories?.map((category: string, index: number) => (
                     <option key={index} value={category}>
                       {category}
                     </option>
@@ -285,12 +359,25 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
             </div>
 
             <Button
-              type="submit"
-              onClick={() => router.push("/payment")}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-base font-bold"
+              onClick={handleProceedToPayment}
+              disabled={isSubmitting}
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Proceed To Payment
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Saving...
+                </>
+              ) : (
+                "Proceed To Payment"
+              )}
             </Button>
+
+            {isSubmitting && (
+              <p className="text-xs text-muted-foreground text-center">
+                Saving your registration details...
+              </p>
+            )}
           </div>
         </div>
       </section>
