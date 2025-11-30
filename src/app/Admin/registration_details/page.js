@@ -1,35 +1,38 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Eye, Download } from 'lucide-react';
-
-const registrations = [
-    { name: 'John6', age: 26, phone: '55469852', gender: 'Male', ticketsBooked: 2, paymentStatus: 'Paid' },
-    { name: 'Dee', age: 26, phone: '55469852', gender: 'Male', ticketsBooked: 4, paymentStatus: 'Paid' },
-    { name: 'Jony', age: 26, phone: '55469852', gender: 'Female', ticketsBooked: 1, paymentStatus: 'Paid' },
-    { name: 'John6', age: 26, phone: '55469852', gender: 'Male', ticketsBooked: 5, paymentStatus: 'Pending' },
-    { name: 'John6', age: 26, phone: '55469852', gender: 'Male', ticketsBooked: 1, paymentStatus: 'Paid' },
-    { name: 'John6', age: 26, phone: '55469852', gender: 'Male', ticketsBooked: 1, paymentStatus: 'Paid' },
-    { name: 'John6', age: 26, phone: '55469852', gender: 'Male', ticketsBooked: 6, paymentStatus: 'Paid' },
-    { name: 'John6', age: 26, phone: '55469852', gender: 'Male', ticketsBooked: 8, paymentStatus: 'Pending' },
-    { name: 'John6', age: 26, phone: '55469852', gender: 'Male', ticketsBooked: 8, paymentStatus: 'Paid' },
-    { name: 'John6', age: 26, phone: '55469852', gender: 'Male', ticketsBooked: 4, paymentStatus: 'Pending' },
-];
+import { getEventParticipants } from '../../api/participant';
 
 export default function RegistrationsDetails() {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All Status');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(5);
+    const [userdata, setUserData] = useState([]);
 
-    const filteredRegistrations = registrations.filter((registration) => {
-        const matchesSearch = registration.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesStatus = statusFilter === 'All Status' || registration.paymentStatus === statusFilter;
+    useEffect(() => {
+        const fetchUsers = async () => {
+            const response = await getEventParticipants();
+            if (response && response.data) {
+                setUserData(response.data.participants || []);
+            }
+        }
+
+        fetchUsers();
+    }, []);
+
+    const filteredRegistrations = userdata.filter((registration) => {
+        const name = registration.attendeeInfo?.name || '';
+        const paymentStatus = registration.paymentStatus || '';
+
+        const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = statusFilter === 'All Status' || paymentStatus === statusFilter;
         return matchesSearch && matchesStatus;
     });
 
     const totalPages = Math.ceil(filteredRegistrations.length / itemsPerPage);
-    const currentPageRegistrations = filteredRegistrations.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage); // Slice data for current page
+    const currentPageRegistrations = filteredRegistrations.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const handlePageChange = (page) => {
         if (page >= 1 && page <= totalPages) {
@@ -39,8 +42,8 @@ export default function RegistrationsDetails() {
 
     const getStatusColor = (status) => {
         switch (status) {
-            case 'Paid': return 'bg-green-100 text-green-800';
-            case 'Pending': return 'bg-orange-100 text-orange-800';
+            case 'paid': return 'bg-green-100 text-green-800';
+            case 'pending': return 'bg-orange-100 text-orange-800';
             default: return 'bg-gray-100 text-gray-800';
         }
     };
@@ -101,14 +104,16 @@ export default function RegistrationsDetails() {
                         <tbody className="divide-y divide-slate-200">
                             {currentPageRegistrations.map((registration, idx) => (
                                 <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                                    <td className="px-6 py-4  text-slate-700">{registration.name}</td>
-                                    <td className="px-6 py-4 text-slate-700">{registration.age}</td>
-                                    <td className="px-6 py-4 text-slate-700">{registration.phone}</td>
-                                    <td className="px-6 py-4 text-slate-700">{registration.gender}</td>
-                                    <td className="px-6 py-4 text-slate-700">{registration.ticketsBooked}</td>
+                                    <td className="px-6 py-4  text-slate-700">{registration.attendeeInfo?.name || 'N/A'}</td>
+                                    <td className="px-6 py-4 text-slate-700">{registration.attendeeInfo?.age || 'N/A'}</td>
+                                    <td className="px-6 py-4 text-slate-700">{registration.billingInfo?.phone || 'N/A'}</td>
+                                    <td className="px-6 py-4 text-slate-700">
+                                        {registration.attendeeInfo?.gender ? registration.attendeeInfo.gender.charAt(0).toUpperCase() + registration.attendeeInfo.gender.slice(1) : 'N/A'}
+                                    </td>
+                                    <td className="px-6 py-4 text-slate-700">{registration.numberOfTickets || 0}</td>
                                     <td className="px-6 py-4">
                                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(registration.paymentStatus)}`}>
-                                            {registration.paymentStatus}
+                                            {registration.paymentStatus || 'Unknown'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-center">

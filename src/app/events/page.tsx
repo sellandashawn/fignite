@@ -208,11 +208,10 @@ export default function EventsPage() {
                 <button
                   key={sport}
                   onClick={() => setSelectedSport(sport)}
-                  className={`px-4 py-2 rounded-full font-semibold transition ${
-                    selectedSport === sport
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card border border-border hover:border-primary text-foreground"
-                  }`}
+                  className={`px-4 py-2 rounded-full font-semibold transition ${selectedSport === sport
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card border border-border hover:border-primary text-foreground"
+                    }`}
                 >
                   {sport.charAt(0).toUpperCase() + sport.slice(1)}
                 </button>
@@ -240,7 +239,8 @@ export default function EventsPage() {
                     <Link
                       key={event.id}
                       href={`/events/${event.id}`}
-                      className="bg-card rounded-xl overflow-hidden border border-border hover:border-primary transition group cursor-pointer"
+                      className={`bg-card rounded-xl overflow-hidden border border-border hover:border-primary transition group cursor-pointer ${event.status === "cancelled" || event.status === "postponed" ? "opacity-50 pointer-events-none" : ""
+                        }`}
                     >
                       <div className="relative h-56 overflow-hidden bg-muted">
                         <img
@@ -249,19 +249,27 @@ export default function EventsPage() {
                           className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
                         />
                         <div
-                          className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold ${
-                            event.status === "completed"
-                              ? "bg-green-500 text-white"
-                              : event.status === "ongoing"
+                          className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold ${event.status === "completed"
+                            ? "bg-green-500 text-white"
+                            : event.status === "ongoing"
                               ? "bg-blue-500 text-white"
                               : event.status === "cancelled"
-                              ? "bg-red-500 text-white"
-                              : "bg-primary text-primary-foreground"
-                          }`}
+                                ? "bg-red-500 text-white"
+                                : event.status === "postponed"
+                                  ? "bg-yellow-500 text-white"
+                                  : "bg-primary text-primary-foreground"
+                            }`}
                         >
                           {event.status?.charAt(0).toUpperCase() +
                             event.status?.slice(1) || "Upcoming"}
                         </div>
+                        {(event.status === "cancelled" || event.status === "postponed") && (
+                          <div className="absolute inset-0 bg-black opacity-50 flex items-center justify-center">
+                            <span className="text-white font-bold text-xl">
+                              Event {event.status?.charAt(0).toUpperCase() + event.status?.slice(1)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <div className="p-6">
                         <h3 className="text-lg font-bold mb-3 line-clamp-2 group-hover:text-primary transition">
@@ -281,8 +289,7 @@ export default function EventsPage() {
                           <div className="flex items-center gap-2 text-muted-foreground text-sm">
                             <Users size={16} className="flex-shrink-0" />
                             <span>
-                              {event.ticketStatus.maximumOccupancy}{" "}
-                              participating
+                              {event.ticketStatus.maximumOccupancy} participating
                             </span>
                           </div>
                         </div>

@@ -15,9 +15,11 @@ export const registerParticipantWithPayment = async (eventId, data) =>
         },
     });
 
-export const getEventParticipants = async (eventId) =>
-    axios.post(`${API_BASE_URL}/tickets/${eventId}/participants`, { eventId }, {
-        headers: {
-            Authorization: `Bearer ${getAuthToken()}`,
-        },
-    });
+export const getEventParticipants = async (eventId = null) => {
+    const url = eventId
+        ? `${API_BASE_URL}/tickets/participants?eventId=${eventId}`
+        : `${API_BASE_URL}/tickets/participants`;
+
+    return axios.get(url, {
+
+};

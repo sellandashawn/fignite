@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { CheckCircle, Calendar, MapPin, Download, Share2 } from "lucide-react"
@@ -44,11 +44,18 @@ export default function PaymentSuccessPage() {
   const [isClient, setIsClient] = useState(false)
   const [registrationData, setRegistrationData] = useState<RegistrationData | null>(null)
   const [isProcessing, setIsProcessing] = useState(true)
+  const hasProcessed = useRef(false)
 
   useEffect(() => {
     setIsClient(true)
-    processRegistration()
   }, [])
+
+  useEffect(() => {
+    if (!isClient || hasProcessed.current) return
+
+    hasProcessed.current = true
+    processRegistration()
+  }, [isClient])
 
   const processRegistration = async () => {
     try {
@@ -62,7 +69,7 @@ export default function PaymentSuccessPage() {
 
       const registration: RegistrationData = JSON.parse(storedRegistration)
       setRegistrationData(registration)
-      console.log("aaaaaaaaa", registration)
+      console.log("Registration data:", registration)
 
       const participantData = {
         orderId: registration.id,
@@ -150,7 +157,7 @@ export default function PaymentSuccessPage() {
       }
     ],
     attendee: {
-      name: registrationData.billingInfo.name,
+      name: registrationData.billingInfo.firstName + ' ' + registrationData.billingInfo.lastName,
       email: registrationData.billingInfo.email,
       phone: registrationData.billingInfo.phone
     },

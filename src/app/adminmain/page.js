@@ -8,24 +8,35 @@ import DashBoard from '../Admin/dashboard/page';
 import RegistrationsDetails from '../Admin/registration_details/page';
 import { AuthContext } from "../context/AuthContext";
 import { useRouter } from 'next/navigation';
+import { isAdminFromToken } from '../utils/tokenUtils';
 
 export default function AdminMain() {
   const [activeMenu, setActiveMenu] = useState('dashboard');
-  const { user, logout } = useContext(AuthContext);
+  const { user, isLoading } = useContext(AuthContext);
   const router = useRouter();
 
   useEffect(() => {
-    if (!(user && user.userType === 'admin')) {
-      console.log("sssa");
+    if (isLoading) return;
+
+    const token = localStorage.getItem("token");
+
+    if (!user || !token || !isAdminFromToken(token)) {
+      console.log("Unauthorized access attempt");
       router.push('/login');
+      return;
     }
-  }, [user, router]);
+  }, [user, isLoading, router]);
 
-  if (!user) {
-    return null;
+  if (isLoading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
-
-  console.log(user);
 
   return (
     <div className="flex min-h-screen">
