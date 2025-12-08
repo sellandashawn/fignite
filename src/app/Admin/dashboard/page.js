@@ -38,6 +38,7 @@ import {
 import { getAllPayments, getPaymentsByEvent } from "../../api/payment";
 import { getAllEvents, getEventById } from "../../api/event";
 import { getEventParticipants } from "../../api/participant";
+import { getCategories } from "../../api/category";
 
 const attendeeEngagement = [
   { name: "Day 1", engagement: 100 },
@@ -49,10 +50,16 @@ const attendeeEngagement = [
 ];
 
 function getStatusClasses(status) {
-  if (status === "Active") return "bg-green-200 text-green-800";
-  if (status === "Completed") return "bg-primary/20 text-primary/90";
-  if (status === "Pending") return "bg-gray-200 text-gray-700";
-  if (status === "Upcoming") return "bg-yellow-100 text-yellow-800";
+  if (status === "active" || status === "Active")
+    return "bg-green-200 text-green-800";
+  if (status === "completed" || status === "Completed")
+    return "bg-primary/20 text-primary/90";
+  if (status === "pending" || status === "Pending")
+    return "bg-gray-200 text-gray-700";
+  if (status === "upcoming" || status === "Upcoming")
+    return "bg-yellow-100 text-yellow-800";
+  if (status === "ongoing" || status === "Ongoing")
+    return "bg-blue-100 text-blue-800";
   return "bg-slate-200 text-slate-700";
 }
 
@@ -60,6 +67,34 @@ function getStatusClasses(status) {
 const getMonthName = (dateString) => {
   const date = new Date(dateString);
   return date.toLocaleString("default", { month: "short" });
+};
+
+// Helper function to get category name from category object
+const getCategoryName = (categoryIdentifier, categories = []) => {
+  if (!categoryIdentifier) return "General";
+
+  // If it's a string, try to match by name
+  if (typeof categoryIdentifier === "string") {
+    const foundCategory = categories.find(
+      (cat) => cat.name === categoryIdentifier
+    );
+    if (foundCategory) return categoryIdentifier;
+  }
+
+  // If it's an object, extract the name
+  if (typeof categoryIdentifier === "object" && categoryIdentifier !== null) {
+    return categoryIdentifier.name || "General";
+  }
+
+  // Fallback: try to find by id/_id
+  const category = categories.find(
+    (cat) =>
+      cat.id === categoryIdentifier ||
+      cat._id === categoryIdentifier ||
+      cat.name === categoryIdentifier
+  );
+
+  return category ? category.name : "General";
 };
 
 // Helper function to group data by month
@@ -106,7 +141,7 @@ const calculateParticipationRate = (totalPlayers, maximumOccupancy) => {
 };
 
 // Filter events based on criteria
-const filterEvents = (events, filters) => {
+const filterEvents = (events, filters, categories = []) => {
   return events.filter((event) => {
     // Filter by search term
     if (
@@ -117,8 +152,11 @@ const filterEvents = (events, filters) => {
     }
 
     // Filter by event category
-    if (filters.category && event.category !== filters.category) {
-      return false;
+    if (filters.category) {
+      const eventCategoryName = getCategoryName(event.category, categories);
+      if (eventCategoryName !== filters.category) {
+        return false;
+      }
     }
 
     // Filter by date range
@@ -149,8 +187,12 @@ const filterEvents = (events, filters) => {
     }
 
     // Filter by status
-    if (filters.status && event.status !== filters.status.toLowerCase()) {
-      return false;
+    if (filters.status) {
+      const eventStatus = event.status?.toLowerCase();
+      const filterStatus = filters.status.toLowerCase();
+      if (eventStatus !== filterStatus) {
+        return false;
+      }
     }
 
     return true;
@@ -311,6 +353,7 @@ const generateAggregateParticipationRate = (filteredEvents) => {
 export default function DashBoard() {
   const [payments, setPayments] = useState([]);
   const [events, setEvents] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [filteredPayments, setFilteredPayments] = useState([]);
   const [eventid, setEventId] = useState("");
@@ -335,6 +378,20 @@ export default function DashBoard() {
     category: "",
     status: "",
   });
+
+  useEffect(() => {
+    const fetchCategoriesData = async () => {
+      try {
+        const response = await getCategories();
+        console.log("Fetched categories:", response.categories);
+        setCategories(response.categories || []);
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+      }
+    };
+
+    fetchCategoriesData();
+  }, []);
 
   // Default stats when no event is selected
   const defaultStats = [
@@ -410,11 +467,14 @@ export default function DashBoard() {
 
   const [stats, setStats] = useState(defaultStats);
 
-  // Apply filters whenever filters or events/payments change
   useEffect(() => {
-    const filtered = filterEvents(events, { ...filters, searchTerm });
+    const filtered = filterEvents(
+      events,
+      { ...filters, searchTerm },
+      categories
+    );
     setFilteredEvents(filtered);
-  }, [events, filters, searchTerm]);
+  }, [events, filters, searchTerm, categories]);
 
   useEffect(() => {
     const filtered = filterPayments(payments, filters);
@@ -721,6 +781,14 @@ export default function DashBoard() {
   const participationRateToUse =
     participationRate.length > 0 ? participationRate : defaultParticipationRate;
 
+  // Status options for filter dropdown
+  const statusOptions = [
+    { value: "", label: "All Status" },
+    { value: "upcoming", label: "Upcoming" },
+    { value: "ongoing", label: "Ongoing" },
+    { value: "completed", label: "Completed" },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
       <div className="max-w-7xl mx-auto">
@@ -754,7 +822,7 @@ export default function DashBoard() {
                   onClick={toggleAggregateView}
                   className={`flex items-center gap-2 px-4 py-2 font-semibold rounded-lg transition-all ${
                     showAggregateView
-                      ? "flex items-center bg-primary/90 text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-primary/30 transition-all hover:bg-primary/80"
+                      ? "bg-primary/90 text-white hover:shadow-lg hover:shadow-primary/30 hover:bg-primary/80"
                       : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                   }`}
                 >
@@ -775,7 +843,7 @@ export default function DashBoard() {
             </div> */}
           </div>
 
-          <div className="flex gap-4 ">
+          <div className="flex gap-4">
             {/* Date From */}
             <div className="flex-1">
               <label className="block text-sm font-semibold text-slate-700 mb-3">
@@ -853,10 +921,14 @@ export default function DashBoard() {
                   className="text-black w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/60 focus:bg-white/50 transition-all appearance-none cursor-pointer"
                 >
                   <option value="">All Categories</option>
-                  <option value="Table Tennis">Table Tennis</option>
-                  <option value="Road Race">Road Race</option>
-                  <option value="Symposium">Symposium</option>
-                  <option value="Sports">Sports</option>
+                  {categories.map((category) => (
+                    <option
+                      key={category.id || category._id || category.name}
+                      value={category.name}
+                    >
+                      {category.name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -876,16 +948,15 @@ export default function DashBoard() {
                   onChange={(e) => handleFilterChange("status", e.target.value)}
                   className="text-black w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/60 focus:bg-white/50 transition-all appearance-none cursor-pointer"
                 >
-                  <option value="">All Status</option>
-                  <option value="Active">Active</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Upcoming">Upcoming</option>
-                  <option value="Pending">Pending</option>
+                  {statusOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
 
-            {/* Clear Filters Button - Centered */}
             <div className="flex-1 flex items-end">
               <div className="w-full flex justify-center">
                 <button
@@ -936,7 +1007,7 @@ export default function DashBoard() {
                   onClick={toggleAggregateView}
                   className={`flex items-center gap-2 px-4 py-2 font-semibold rounded-lg transition-all ${
                     showAggregateView
-                      ? "flex items-center bg-primary/90 text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-primary/30 transition-all hover:bg-primary/80"
+                      ? "bg-primary/90 text-white hover:shadow-lg hover:shadow-primary/30 hover:bg-primary/80"
                       : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                   }`}
                 >
@@ -985,7 +1056,7 @@ export default function DashBoard() {
                             {new Date(event.date).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4">
-                            {event.category || "General"}
+                            {getCategoryName(event.category, categories)}
                           </td>
                           <td className="px-6 py-4">
                             <span
@@ -1015,7 +1086,7 @@ export default function DashBoard() {
             </div>
           </div>
 
-          {/* Ticket Status Section - Now shows data for selected event OR filtered events */}
+          {/* Ticket Status Section */}
           <div className="pt-5">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-black font-bold text-2xl">
@@ -1023,6 +1094,10 @@ export default function DashBoard() {
                 {selectedEvent ? (
                   <span className="text-lg font-normal text-slate-600 ml-2">
                     - {selectedEvent.eventName}
+                  </span>
+                ) : showAggregateView && filteredEvents.length > 0 ? (
+                  <span className="text-lg font-normal text-slate-600 ml-2">
+                    - Aggregate of {filteredEvents.length} events
                   </span>
                 ) : null}
               </h1>
@@ -1161,66 +1236,60 @@ export default function DashBoard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 mb-8">
-              {/* Ticket Sales Chart */}
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-lg font-semibold text-slate-900 mb-4">
-                  Ticket Sales
-                  {selectedEvent ? (
-                    <span className="text-sm font-normal text-slate-600 ml-2">
-                      - {selectedEvent.eventName}
-                    </span>
-                  ) : showAggregateView && filteredEvents.length > 0 ? (
-                    <span className="text-sm font-normal text-slate-600 ml-2">
-                      - Aggregate of {filteredEvents.length} events
-                    </span>
-                  ) : null}
-                </h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={chartDataToUse}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar
-                      dataKey="sales"
-                      fill="var(--primary)"
-                      radius={[8, 8, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+            {/* Ticket Sales Chart */}
+            <div className="bg-white rounded-2xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                Ticket Sales
+                {selectedEvent ? (
+                  <span className="text-sm font-normal text-slate-600 ml-2">
+                    - {selectedEvent.eventName}
+                  </span>
+                ) : showAggregateView && filteredEvents.length > 0 ? (
+                  <span className="text-sm font-normal text-slate-600 ml-2">
+                    - Aggregate of {filteredEvents.length} events
+                  </span>
+                ) : null}
+              </h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={chartDataToUse}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar
+                    dataKey="sales"
+                    fill="var(--primary)"
+                    radius={[8, 8, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 mb-8">
-              {/*  Attendee Engagement */}
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-lg font-semibold text-slate-900 mb-4">
-                  {" "}
-                  Attendee Engagement
-                </h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={attendeeEngagement}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line
-                      type="monotone"
-                      dataKey="engagement"
-                      stroke="var(--primary)"
-                      strokeWidth={2}
-                      dot={{ fill: "var(--primary)", r: 4 }}
-                      activeDot={{ r: 6, fill: "var(--primary)" }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+            {/* Attendee Engagement */}
+            <div className="bg-white rounded-2xl shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                Attendee Engagement
+              </h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={attendeeEngagement}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line
+                    type="monotone"
+                    dataKey="engagement"
+                    stroke="var(--primary)"
+                    strokeWidth={2}
+                    dot={{ fill: "var(--primary)", r: 4 }}
+                    activeDot={{ r: 6, fill: "var(--primary)" }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
 
-        {/* Rest of the component remains the same */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 space-y-8">
           {/* Event Performance */}
           <div>

@@ -1,17 +1,18 @@
 "use client";
 
-import React, { useState, useContext, useEffect } from 'react';
-import Sidebar from '../common/sidebar';
-import EventDetails from '../Admin/event_details/page';
-import PaymentDetails from '../Admin/payment_details/page';
-import DashBoard from '../Admin/dashboard/page';
-import RegistrationsDetails from '../Admin/registration_details/page';
+import React, { useState, useContext, useEffect } from "react";
+import Sidebar from "../common/sidebar";
+import EventDetails from "../Admin/event_details/page";
+import PaymentDetails from "../Admin/payment_details/page";
+import DashBoard from "../Admin/dashboard/page";
+import RegistrationsDetails from "../Admin/registration_details/page";
+import CategoryDetails from "../Admin/category_details/page";
 import { AuthContext } from "../context/AuthContext";
-import { useRouter } from 'next/navigation';
-import { isAdminFromToken } from '../utils/tokenUtils';
+import { useRouter } from "next/navigation";
+import { isAdminFromToken } from "../utils/tokenUtils";
 
 export default function AdminMain() {
-  const [activeMenu, setActiveMenu] = useState('dashboard');
+  const [activeMenu, setActiveMenu] = useState("dashboard");
   const { user, isLoading } = useContext(AuthContext);
   const router = useRouter();
 
@@ -22,7 +23,7 @@ export default function AdminMain() {
 
     if (!user || !token || !isAdminFromToken(token)) {
       console.log("Unauthorized access attempt");
-      router.push('/login');
+      router.push("/login");
       return;
     }
   }, [user, isLoading, router]);
@@ -42,10 +43,11 @@ export default function AdminMain() {
     <div className="flex min-h-screen">
       <Sidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
       <div className="flex-1">
-        {activeMenu === 'eventDetails' && <EventDetails />}
-        {activeMenu === 'paymentDetails' && <PaymentDetails />}
-        {activeMenu === 'dashboard' && <DashBoard />}
-        {activeMenu === 'registrationDetails' && <RegistrationsDetails />}
+        {activeMenu === "eventDetails" && <EventDetails />}
+        {activeMenu === "categoryDetails" && <CategoryDetails />}
+        {activeMenu === "paymentDetails" && <PaymentDetails />}
+        {activeMenu === "dashboard" && <DashBoard />}
+        {activeMenu === "registrationDetails" && <RegistrationsDetails />}
       </div>
     </div>
   );

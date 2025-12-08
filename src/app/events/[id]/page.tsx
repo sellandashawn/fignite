@@ -10,6 +10,7 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
   const [quantity, setQuantity] = useState(1);
   const [eventData, setEventData] = useState<any>(null);
   const [eventId, setEventId] = useState<string | null>(null);
+  const [shouldShowTicketBooking, setShouldShowTicketBooking] = useState(false);
 
   const events: { [key: string]: any } = {
     "1": {
@@ -120,6 +121,36 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
     }
   }, [eventId]);
 
+  // Calculate if ticket booking should be shown
+  useEffect(() => {
+    if (eventData) {
+      const eventDate = new Date(eventData.date);
+      const today = new Date();
+      const isUpcomingOrOngoing = eventDate >= today;
+
+      setShouldShowTicketBooking(isUpcomingOrOngoing);
+    }
+  }, [eventData]);
+
+  // Calculate available tickets
+  const getAvailableTickets = () => {
+    if (!eventData || !eventData.ticketStatus) return 0;
+
+    const maxOccupancy = eventData.ticketStatus.maximumOccupancy || 0;
+    const totalPlayers = eventData.ticketStatus.totalNumberOfPlayers || 0;
+
+    return Math.max(0, maxOccupancy - totalPlayers);
+  };
+
+  const availableTickets = getAvailableTickets();
+
+  // Update quantity when available tickets change
+  useEffect(() => {
+    if (availableTickets > 0 && quantity > availableTickets) {
+      setQuantity(availableTickets);
+    }
+  }, [availableTickets, quantity]);
+
   console.log("Event Data:", eventData);
 
   if (!eventData) {
@@ -134,6 +165,26 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
   const totalPrice = (
     Number.parseFloat(eventData.perTicketPrice) * quantity
   ).toFixed(2);
+
+  // Helper function to handle quantity changes
+  const handleQuantityChange = (newQuantity: number) => {
+    if (newQuantity < 1) newQuantity = 1;
+    if (newQuantity > availableTickets) newQuantity = availableTickets;
+    setQuantity(newQuantity);
+  };
+
+  const incrementQuantity = () => {
+    handleQuantityChange(quantity + 1);
+  };
+
+  const decrementQuantity = () => {
+    handleQuantityChange(quantity - 1);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Number.parseInt(e.target.value) || 0;
+    handleQuantityChange(value);
+  };
 
   return (
     <main className="bg-background text-foreground">
@@ -153,7 +204,7 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
       <section className="py-12 px-8">
         <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8">
           {/* Left Column - Event Details */}
-          <div className="md:col-span-2">
+          <div className={`${shouldShowTicketBooking ? 'md:col-span-2' : 'md:col-span-3'}`}>
             {/* Hero Image */}
             <div className="relative h-96 md:h-[500px] rounded-xl overflow-hidden mb-8 bg-muted">
               <img
@@ -199,6 +250,23 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
                   <p className="font-bold">{eventData.ticketStatus.maximumOccupancy}</p>
                 </div>
               </div>
+
+              {/* Ticket Availability Badge */}
+              {shouldShowTicketBooking && (
+                <div className="mb-8">
+                  <div className={`inline-flex items-center px-4 py-2 rounded-lg font-semibold ${availableTickets > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {availableTickets > 0 ? (
+                      <>
+                        Available Tickets : {availableTickets}
+                      </>
+                    ) : (
+                      <>
+                        Sold Out
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Description */}
@@ -238,80 +306,135 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
             </div>
           </div>
 
-          {/* Right Column - Ticket Booking */}
-          <div className="md:col-span-1">
-            {/* Ticket Card */}
-            <div className="bg-card rounded-xl border border-border p-8 sticky top-24 space-y-6">
-              <div>
-                <h3 className="text-xl font-bold mb-2">Tickets</h3>
-                <p className="text-muted-foreground text-sm">{eventData.eventName}</p>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Ticket Price</span>
-                  <span className="font-bold text-lg">$ {eventData.perTicketPrice}</span>
+          {/* Right Column - Ticket Booking (Conditional) */}
+          {shouldShowTicketBooking && availableTickets > 0 && (
+            <div className="md:col-span-1">
+              {/* Ticket Card */}
+              <div className="bg-card rounded-xl border border-border p-8 sticky top-24 space-y-6">
+                <div>
+                  <h3 className="text-xl font-bold mb-2">Tickets</h3>
+                  <p className="text-muted-foreground text-sm">{eventData.eventName}</p>
                 </div>
-                {/* <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Ticket Price</span>
-                  <span className="font-bold text-lg">{event.price}</span>
-                </div> */}
-                <div className="border-t border-border pt-3 flex justify-between items-center">
-                  <span className="text-muted-foreground font-semibold">
-                    Sub Total
-                  </span>
-                  <span className="font-bold text-lg text-primary">
-                    $ {totalPrice}
-                  </span>
-                </div>
-              </div>
 
-              {/* Quantity Selector */}
-              <div>
-                <label className="block text-sm font-semibold mb-3">Quantity</label>
-                <div className="flex items-center gap-4 bg-background rounded-lg p-3">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-8 h-8 rounded-lg border border-border hover:border-primary hover:bg-primary/10 transition flex items-center justify-center"
-                  >
-                    <Minus size={16} />
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Ticket Price</span>
+                    <span className="font-bold text-lg">$ {eventData.perTicketPrice}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Available</span>
+                    <span className="font-bold">{availableTickets} tickets</span>
+                  </div>
+                  <div className="border-t border-border pt-3 flex justify-between items-center">
+                    <span className="text-muted-foreground font-semibold">
+                      Sub Total
+                    </span>
+                    <span className="font-bold text-lg text-primary">
+                      $ {totalPrice}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Quantity Selector */}
+                <div>
+                  <label className="block text-sm font-semibold mb-3">Quantity</label>
+                  <div className="flex items-center gap-4 bg-background rounded-lg p-3">
+                    <button
+                      onClick={decrementQuantity}
+                      disabled={quantity <= 1}
+                      className={`w-8 h-8 rounded-lg border transition flex items-center justify-center ${quantity <= 1 ? 'border-border/50 text-muted-foreground/50 cursor-not-allowed' : 'border-border hover:border-primary hover:bg-primary/10'}`}
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <input
+                      type="number"
+                      value={quantity}
+                      onChange={handleInputChange}
+                      min="1"
+                      max={availableTickets}
+                      className="flex-1 bg-transparent text-center font-bold outline-none"
+                    />
+                    <button
+                      onClick={incrementQuantity}
+                      disabled={quantity >= availableTickets}
+                      className={`w-8 h-8 rounded-lg border transition flex items-center justify-center ${quantity >= availableTickets ? 'border-border/50 text-muted-foreground/50 cursor-not-allowed' : 'border-border hover:border-primary hover:bg-primary/10'}`}
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Get Tickets Button */}
+                <Link href={`/events/${eventData.id}/get-tickets?quantity=${quantity}`}>
+                  <button className="w-full bg-primary text-primary-foreground py-3 rounded-lg hover:opacity-90 transition font-bold text-lg">
+                    GET TICKETS
                   </button>
-                  <input
-                    type="number"
-                    value={quantity}
-                    onChange={(e) =>
-                      setQuantity(Math.max(1, Number.parseInt(e.target.value) || 1))
-                    }
-                    className="flex-1 bg-transparent text-center font-bold outline-none"
-                  />
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="w-8 h-8 rounded-lg border border-border hover:border-primary hover:bg-primary/10 transition flex items-center justify-center"
-                  >
-                    <Plus size={16} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Get Tickets Button */}
-              <Link href={`/events/${eventData.id}/get-tickets?quantity=${quantity}`}>
-                <button className="w-full bg-primary text-primary-foreground py-3 rounded-lg hover:opacity-90 transition font-bold text-lg">
-                  GET TICKETS
+                </Link>
+                {/* Add to Calendar */}
+                <button className="w-full border-2 border-primary text-primary py-2 mt-3 rounded-lg hover:bg-primary/10 transition font-semibold flex items-center justify-center gap-2">
+                  <Calendar size={18} />
+                  Add To Calendar
                 </button>
-              </Link>
-              {/* Add to Calendar */}
-              <button className="w-full border-2 border-primary text-primary py-2 mt-3 rounded-lg hover:bg-primary/10 transition font-semibold flex items-center justify-center gap-2">
-                <Calendar size={18} />
-                Add To Calendar
-              </button>
 
-              {/* Share */}
-              <button className="w-full border border-border text-foreground py-2 rounded-lg hover:border-primary transition font-semibold flex items-center justify-center gap-2">
-                <Share2 size={18} />
-                Share Event
-              </button>
+                {/* Share */}
+                <button className="w-full border border-border text-foreground py-2 rounded-lg hover:border-primary transition font-semibold flex items-center justify-center gap-2">
+                  <Share2 size={18} />
+                  Share Event
+                </button>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Event Ended/Sold Out Message */}
+          {!shouldShowTicketBooking && (
+            <div className="md:col-span-3 mt-8">
+              <div className="bg-card border border-border rounded-xl p-8 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                  <Calendar size={24} className="text-muted-foreground" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">Event Has Ended</h3>
+                <p className="text-muted-foreground mb-4">
+                  This event has already taken place. Registration is no longer available.
+                </p>
+                <Link href="/events">
+                  <button className="inline-flex items-center px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition font-semibold">
+                    Browse Upcoming Events
+                  </button>
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* Sold Out Message (if upcoming but no tickets) */}
+          {shouldShowTicketBooking && availableTickets === 0 && (
+            <div className="md:col-span-1">
+              <div className="bg-card rounded-xl border border-border p-8 sticky top-24 space-y-6">
+                <div>
+                  <h3 className="text-xl font-bold mb-2">Tickets</h3>
+                  <p className="text-muted-foreground text-sm">{eventData.eventName}</p>
+                </div>
+
+                <div className="text-center py-8">
+                  <h4 className="font-bold text-lg mb-2">Sold Out</h4>
+                  <p className="text-muted-foreground text-sm">
+                    All tickets for this event have been sold.
+                  </p>
+                </div>
+
+                {/* Add to Calendar */}
+                <button className="w-full border-2 border-primary text-primary py-2 rounded-lg hover:bg-primary/10 transition font-semibold flex items-center justify-center gap-2">
+                  <Calendar size={18} />
+                  Add To Calendar
+                </button>
+
+                {/* Share */}
+                <button className="w-full border border-border text-foreground py-2 rounded-lg hover:border-primary transition font-semibold flex items-center justify-center gap-2">
+                  <Share2 size={18} />
+                  Share Event
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

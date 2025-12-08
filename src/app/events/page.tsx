@@ -12,6 +12,8 @@ import {
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { getAllEvents } from "../api/event";
+import { getCategories } from "../api/category";
+
 
 export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -20,25 +22,31 @@ export default function EventsPage() {
   const [selectedSport, setSelectedSport] = useState("all");
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
-    const fetchEvents = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await getAllEvents();
-        console.log("asa", response);
-        if (response && response.events) {
-          setEvents(response.events);
-        } else {
-          console.error("Unexpected response structure:", response);
+
+        const eventsResponse = await getAllEvents();
+        if (eventsResponse && eventsResponse.events) {
+          setEvents(eventsResponse.events);
         }
+
+        const categoriesResponse = await getCategories();
+        if (categoriesResponse && categoriesResponse.categories) {
+          setCategories(categoriesResponse.categories);
+        }
+
       } catch (error) {
         console.log(error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchEvents();
-    setLoading(false);
+    fetchData();
   }, []);
 
   console.log("Events ", events);
@@ -112,21 +120,54 @@ export default function EventsPage() {
     },
   ];
 
+  const getCategoryName = (categoryIdentifier) => {
+    if (!categoryIdentifier) return "N/A";
+
+    if (typeof categoryIdentifier === "string") {
+      const foundCategory = categories.find(
+        (cat) => cat.name === categoryIdentifier
+      );
+      if (foundCategory) return categoryIdentifier;
+    }
+
+    if (typeof categoryIdentifier === "object" && categoryIdentifier !== null) {
+      return categoryIdentifier.name || "N/A";
+    }
+
+    const category = categories.find(
+      (cat) =>
+        cat.id === categoryIdentifier ||
+        cat._id === categoryIdentifier ||
+        cat.name === categoryIdentifier
+    );
+
+    return category ? category.name : "N/A";
+  };
+
   const filteredEvents = events
     .filter((event) => {
       const matchesSearch =
         event.eventName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         event.venue?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        event.category?.toLowerCase().includes(searchQuery.toLowerCase());
+        getCategoryName(event.category)?.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesSport =
-        selectedSport === "all" || event.category === selectedSport;
+        selectedSport === "all" || getCategoryName(event.category)?.toLowerCase() === selectedSport.toLowerCase();
 
       return matchesSearch && matchesSport;
     })
     .sort((a, b) => {
       if (sortBy === "upcoming") {
-        return new Date(a.date) - new Date(b.date);
+        const now = new Date();
+        const aDate = new Date(a.date);
+        const bDate = new Date(b.date);
+
+        if (aDate >= now && bDate >= now) {
+          return aDate - bDate;
+        }
+        if (aDate >= now) return -1;
+        if (bDate >= now) return 1;
+        return bDate - aDate;
       }
       if (sortBy === "newest") {
         return new Date(b.createdAt) - new Date(a.createdAt);
@@ -134,9 +175,10 @@ export default function EventsPage() {
       return 0;
     });
 
+
   const sports = [
     "all",
-    ...new Set(events.map((event) => event.category).filter(Boolean)),
+    ...categories.map(category => category.name)
   ];
 
   return (

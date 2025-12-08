@@ -1,17 +1,25 @@
 "use client";
 
-import React, { useContext } from 'react';
-import { LayoutDashboard, Calendar, CreditCard, Users, LogOut } from 'lucide-react';
-import { AuthContext } from '../context/AuthContext';
+import React, { useContext } from "react";
+import {
+  LayoutDashboard,
+  Calendar,
+  CreditCard,
+  Users,
+  LogOut,
+  Tags,
+} from "lucide-react";
+import { AuthContext } from "../context/AuthContext";
 
 export default function Sidebar({ activeMenu, setActiveMenu }) {
   const { user, logout } = useContext(AuthContext);
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'eventDetails', label: 'Event Details', icon: Calendar },
-    { id: 'paymentDetails', label: 'Payment Details', icon: CreditCard },
-    { id: 'registrationDetails', label: 'Registration Details', icon: Users },
+    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { id: "eventDetails", label: "Event Details", icon: Calendar },
+    { id: "categoryDetails", label: "Category Details", icon: Tags },
+    { id: "paymentDetails", label: "Payment Details", icon: CreditCard },
+    { id: "registrationDetails", label: "Registration Details", icon: Users },
   ];
 
   return (
@@ -32,10 +40,11 @@ export default function Sidebar({ activeMenu, setActiveMenu }) {
           <button
             key={id}
             onClick={() => setActiveMenu(id)}
-            className={`w-full px-4 py-3 rounded-lg flex items-center gap-3 transition-all duration-300 ${activeMenu === id
-              ? 'bg-primary/90 text-white shadow-lg shadow-primary/40 scale-105'
-              : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
-              }`}
+            className={`w-full px-4 py-3 rounded-lg flex items-center gap-3 transition-all duration-300 ${
+              activeMenu === id
+                ? "bg-primary/90 text-white shadow-lg shadow-primary/40 scale-105"
+                : "text-slate-300 hover:text-white hover:bg-slate-700/50"
+            }`}
           >
             <Icon size={20} />
             <span className="font-medium ">{label}</span>

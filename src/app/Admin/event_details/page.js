@@ -25,6 +25,7 @@ import {
   updateEvent,
   getEventById,
 } from "../../api/event";
+import { getCategories } from "../../api/category";
 
 export default function EventDetails() {
   const [showForm, setShowForm] = useState(false);
@@ -40,6 +41,7 @@ export default function EventDetails() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
 
   const initialFormData = {
     eventName: "",
@@ -51,7 +53,7 @@ export default function EventDetails() {
     perTicketPrice: "",
     maximumOccupancy: "",
     raceCategories: ["Race A", "Race B"],
-    availableTshirtSizes: ["XS", "S"],
+    availableTshirtSizes: ["XS", "S", "M", "L", "XL", "XXL"],
     agenda: [{ time: "", activity: "" }],
     status: "upcoming",
   };
@@ -62,9 +64,80 @@ export default function EventDetails() {
     { value: "upcoming", label: "Upcoming" },
     { value: "ongoing", label: "Ongoing" },
     { value: "completed", label: "Completed" },
-    { value: "cancelled", label: "Cancelled" },
-    { value: "postponed", label: "Postponed" },
   ];
+
+  // Helper function to determine event status based on date
+  const determineEventStatus = (eventDate, eventTime) => {
+    if (!eventDate) return "upcoming";
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const eventDateTime = new Date(eventDate);
+
+    // If there's a time, add it to the event date
+    if (eventTime) {
+      const [hours, minutes] = eventTime.split(":");
+      eventDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    }
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(23, 59, 59, 999);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+
+    // If event date is before today (and time has passed if specified)
+    if (eventDateTime < yesterday) {
+      return "completed";
+    }
+    // If event date is today
+    else if (
+      eventDateTime.getDate() === today.getDate() &&
+      eventDateTime.getMonth() === today.getMonth() &&
+      eventDateTime.getFullYear() === today.getFullYear()
+    ) {
+      return "ongoing";
+    }
+    // If event date is tomorrow or later
+    else if (eventDateTime >= tomorrow) {
+      return "upcoming";
+    }
+    // For events that started yesterday but ended today (edge case)
+    else {
+      return "completed";
+    }
+  };
+
+  // getCategoryName function
+  const getCategoryName = (categoryIdentifier) => {
+    if (!categoryIdentifier) return "N/A";
+
+    // If it's a string, try to match by name first
+    if (typeof categoryIdentifier === "string") {
+      const foundCategory = categories.find(
+        (cat) => cat.name === categoryIdentifier
+      );
+      if (foundCategory) return categoryIdentifier;
+    }
+
+    // If it's an object , extract the name
+    if (typeof categoryIdentifier === "object" && categoryIdentifier !== null) {
+      return categoryIdentifier.name || "N/A";
+    }
+
+    // Fallback: try to find by id/_id
+    const category = categories.find(
+      (cat) =>
+        cat.id === categoryIdentifier ||
+        cat._id === categoryIdentifier ||
+        cat.name === categoryIdentifier
+    );
+
+    return category ? category.name : "N/A";
+  };
 
   const fetchEventById = async (eventId) => {
     try {
@@ -83,13 +156,14 @@ export default function EventDetails() {
           time: event.time || "",
           category: event.category || "",
           description: event.description || "",
-          perTicketPrice: event.perTicketPrice || "",
+          perTicketPrice: event.perTicketPrice || event.perlicketPrice || "",
           maximumOccupancy: event.ticketStatus?.maximumOccupancy || "",
           raceCategories:
             event.raceCategories && event.raceCategories.length > 0
               ? event.raceCategories
               : [""],
-          availableTshirtSizes: event.availableTshirtSizes || [],
+          availableTshirtSizes:
+            event.availableTshirtSizes || event.availableFshirtSizes || [],
           agenda:
             event.agenda && event.agenda.length > 0
               ? event.agenda
@@ -111,6 +185,17 @@ export default function EventDetails() {
     } catch (err) {
       console.error("Error fetching event:", err);
       setError("Failed to fetch event details");
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await getCategories();
+      console.log("Fetched categories:", response.categories);
+      setCategories(response.categories || []);
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+      setError("Failed to fetch categories");
     }
   };
 
@@ -244,8 +329,9 @@ export default function EventDetails() {
       submitData.append("description", formData.description);
       submitData.append("perTicketPrice", formData.perTicketPrice);
       submitData.append("maximumOccupancy", formData.maximumOccupancy);
-      submitData.append("status", formData.status);
+      const autoStatus = determineEventStatus(formData.date, formData.time);
 
+      submitData.append("status", autoStatus);
       submitData.append("agenda", JSON.stringify(formData.agenda));
       submitData.append(
         "raceCategories",
@@ -284,7 +370,18 @@ export default function EventDetails() {
   const fetchEvents = async () => {
     try {
       const response = await getAllEvents();
-      setEvents(response.events || []);
+      const updatedEvents = (response.events || []).map((event) => {
+        if (
+          !event.status ||
+          (event.status !== "cancelled" && event.status !== "postponed")
+        ) {
+          const autoStatus = determineEventStatus(event.date, event.time);
+          return { ...event, status: autoStatus };
+        }
+        return event;
+      });
+
+      setEvents(updatedEvents);
     } catch (err) {
       console.error("Error fetching events:", err);
       setError("Failed to fetch events");
@@ -292,7 +389,15 @@ export default function EventDetails() {
   };
 
   useEffect(() => {
-    fetchEvents();
+    const fetchAllData = async () => {
+      try {
+        await Promise.all([fetchEvents(), fetchCategories()]);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
+    };
+
+    fetchAllData();
   }, []);
 
   const resetForm = () => {
@@ -326,10 +431,6 @@ export default function EventDetails() {
         return "bg-yellow-100 text-yellow-800";
       case "completed":
         return "bg-blue-100 text-blue-800";
-      case "cancelled":
-        return "bg-red-100 text-red-800";
-      case "postponed":
-        return "bg-orange-100 text-orange-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -350,16 +451,14 @@ export default function EventDetails() {
 
     const eventName = event.eventName || "";
     const eventStatus = event.status || "";
-    const eventCategory = event.category || "";
-
+    const eventCategoryName = getCategoryName(event.category || "");
     const matchesSearch = eventName
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     const matchesStatus =
       statusFilter === "All Status" || eventStatus === statusFilter;
     const matchesCategory =
-      categoryFilter === "All Category" || eventCategory === categoryFilter;
-
+      categoryFilter === "All Category" || eventCategoryName === categoryFilter;
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
@@ -445,10 +544,14 @@ export default function EventDetails() {
                     className="text-black appearance-none px-4 py-2 pr-8 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/60 cursor-pointer"
                   >
                     <option>All Category</option>
-                    <option value="Table Tennis">Table Tennis</option>
-                    <option value="Road Race">Road Race</option>
-                    <option value="Symposium">Symposium</option>
-                    <option value="Sports">Sports</option>
+                    {categories.map((category) => (
+                      <option
+                        key={category.id || category._id || category.name}
+                        value={category.name}
+                      >
+                        {category.name}
+                      </option>
+                    ))}
                   </select>
                   <ChevronDown
                     className="absolute right-2 top-2.5 text-slate-400 pointer-events-none"
@@ -528,7 +631,7 @@ export default function EventDetails() {
                             </div>
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-600">
-                            {event.category || "N/A"}
+                            {getCategoryName(event.category)}
                           </td>
                           <td className="px-6 py-4">
                             <span
@@ -541,7 +644,10 @@ export default function EventDetails() {
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-600">
                             <div className="flex items-center gap-1">
-                              $ {event.perTicketPrice || "0.00"}
+                              ${" "}
+                              {event.perTicketPrice ||
+                                event.perlicketPrice ||
+                                "0.00"}
                             </div>
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-600">
@@ -733,10 +839,14 @@ export default function EventDetails() {
                       required
                     >
                       <option value="">Select a Category</option>
-                      <option value="Table Tennis">Table Tennis</option>
-                      <option value="Road Race">Road Race</option>
-                      <option value="Symposium">Symposium</option>
-                      <option value="Sports">Sports</option>
+                      {categories.map((category) => (
+                        <option
+                          key={category.id || category._id || category.name}
+                          value={category.name}
+                        >
+                          {category.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -817,60 +927,68 @@ export default function EventDetails() {
 
               {/* Race Categories */}
               {/* <div className="group">
-                <label className="block text-sm font-semibold text-slate-700 mb-3">Race Categories</label>
-                {formData.raceCategories.map((category, index) => (
-                  <div key={index} className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      value={category}
-                      onChange={(e) => handleArrayChange(index, e.target.value, 'raceCategories')}
-                      placeholder="Enter race category"
-                      className="text-black flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/60 focus:bg-white transition-all"
-                    />
-                    {formData.raceCategories.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeArrayItem(index, 'raceCategories')}
-                        className="px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => addArrayItem('raceCategories')}
-                  className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-all"
-                >
-                  <Plus size={16} />
-                  Add Race Category
-                </button>
-              </div> */}
+                  <label className="block text-sm font-semibold text-slate-700 mb-3">
+                    Race Categories
+                  </label>
+                  {formData.raceCategories.map((category, index) => (
+                    <div key={index} className="flex gap-2 mb-2">
+                      <input
+                        type="text"
+                        value={category}
+                        onChange={(e) =>
+                          handleArrayChange(
+                            index,
+                            e.target.value,
+                            "raceCategories"
+                          )
+                        }
+                        placeholder="Enter race category"
+                        className="text-black flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/60 focus:bg-white transition-all"
+                      />
+                      {formData.raceCategories.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeArrayItem(index, "raceCategories")}
+                          className="px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => addArrayItem("raceCategories")}
+                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-all"
+                  >
+                    <Plus size={16} />
+                    Add Race Category
+                  </button>
+                </div> */}
 
               {/* Available T-Shirt Sizes */}
               {/* <div className="group">
-                <label className="block text-sm font-semibold text-slate-700 mb-3">
-                  Available T-Shirt Sizes
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {tshirtSizes.map((size) => (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => handleTshirtSizeChange(size)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
-                        formData.availableTshirtSizes.includes(size)
-                          ? "bg-primary/90 text-white border-primary/90"
-                          : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
-                      }`}
-                    >
-                      <Shirt size={16} />
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div> */}
+                  <label className="block text-sm font-semibold text-slate-700 mb-3">
+                    Available T-Shirt Sizes
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {tshirtSizes.map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => handleTshirtSizeChange(size)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+                          formData.availableTshirtSizes.includes(size)
+                            ? "bg-primary/90 text-white border-primary/90"
+                            : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
+                        }`}
+                      >
+                        <Shirt size={16} />
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div> */}
 
               {/* Agenda */}
               <div className="group">
