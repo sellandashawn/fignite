@@ -7,6 +7,8 @@ import { MapPin, Calendar } from "lucide-react"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { getEventById } from "../../../api/event"
+import { createCheckout } from "@/app/api/stripe"
+import { Footer } from "@/components/footer"
 
 export default function GetTicketsPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -14,8 +16,8 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
   const [eventId, setEventId] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const quantity = parseInt(searchParams.get('quantity') || '1');
-
+  const quantity = parseInt(searchParams.get("quantity") || "1");
+  const [attendees, setAttendees] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchEventData = async () => {
@@ -41,7 +43,23 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
     }
   }, [eventId]);
 
-  console.log("events data", eventData)
+  useEffect(() => {
+    if (quantity && !isNaN(quantity)) {
+      const initial = Array.from({ length: quantity }, () => ({
+        name: "",
+        idNumber: "",
+        age: "",
+        gender: "",
+        attendeeEmail: "",
+        tshirtSize: "",
+        raceCategory: "",
+        teamName: "",
+      }));
+      setAttendees(initial);
+    }
+  }, [quantity, eventData]);
+
+  console.log("events data", eventData);
 
   // State
   const [form, setForm] = useState({
@@ -58,13 +76,23 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
     raceCategory: "",
     teamName: "",
     agree: false,
-  })
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = e.target
+    const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
     setForm({ ...form, [name]: type === "checkbox" ? checked : value });
-  }
+  };
+
+  const handleAttendeeChange = (
+    index: number,
+    field: string,
+    value: string
+  ) => {
+    const updated = [...attendees];
+    updated[index][field] = value;
+    setAttendees(updated);
+  };
 
   // Function to save registration with pending status
   const saveRegistration = async () => {
@@ -104,45 +132,70 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
 
     try {
       // Generate a unique registration ID
-      const registrationId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const registrationId = `${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
 
-      // Save to localStorage 
+      // Save to localStorage
       const newRegistration = {
         id: registrationId,
-        ...registrationData
+        ...registrationData,
       };
 
-      localStorage.setItem('currentRegistration', JSON.stringify(newRegistration));
+      localStorage.setItem(
+        "currentRegistration",
+        JSON.stringify(newRegistration)
+      );
 
-      console.log('Registration saved with ID:', registrationId);
+      console.log("Registration saved with ID:", registrationId);
       return registrationId;
-
     } catch (error) {
-      console.error('Error saving registration:', error);
+      console.error("Error saving registration:", error);
       throw error;
     }
-  }
+  };
 
   const handleProceedToPayment = async () => {
-    // Validate required fields
-    if (!form.firstName || !form.lastName || !form.email || !form.phone ||
-      !form.name || !form.idNumber || !form.agree) {
-      alert("Please fill in all required fields and agree to the terms.");
+    if (
+      !form.firstName ||
+      !form.lastName ||
+      !form.email ||
+      !form.phone ||
+      !form.agree
+    ) {
+      alert("Please fill in all required fields.");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
+      // Save registration locally
       const registrationId = await saveRegistration();
-      router.push(`/payment?registrationId=${registrationId}&eventId=${eventId}&quantity=${quantity}`);
-    } catch (error) {
-      console.error('Error proceeding to payment:', error);
-      alert('Failed to save registration. Please try again.');
+
+      const checkoutData = {
+        eventId: eventId,
+        eventName: eventData.eventName,
+        quantity: quantity,
+        totalAmount: total,
+        participantId: registrationId, // OPTIONAL but useful
+      };
+
+      const res = await createCheckout(checkoutData);
+
+      // Call Stripe backend
+      if (res.data?.session?.url) {
+        window.location.href = res.data.session.url;
+      } else {
+        alert("Payment session failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error connecting to payment gateway");
     } finally {
       setIsSubmitting(false);
     }
-  }
+  };
 
   const event = {
     title: "Fun Run Larian Perpaduan Malaysia Madani",
@@ -150,18 +203,20 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
     location: "Sunway Ipoh, Malaysia",
     ticketQty: 2,
     ticketPrice: 100,
-  }
+  };
 
   if (!eventData) {
-    return <div className="flex justify-center items-center min-h-screen">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-        <p className="text-muted-foreground">Loading event...</p>
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading event...</p>
+        </div>
       </div>
-    </div>;
+    );
   }
 
-  const total = quantity * eventData.perTicketPrice
+  const total = quantity * eventData.perTicketPrice;
 
   return (
     <main className="bg-background text-foreground">
@@ -228,87 +283,124 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
             {/* Attendee Info */}
             <div>
               <h2 className="text-xl font-bold mb-4">
-                Attendee Information ( {eventData.eventName} )
+                Attendees Information (Total: {quantity})
               </h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                <input
-                  name="name"
-                  placeholder="Name"
-                  value={form.name}
-                  onChange={handleChange}
-                  className="border border-border rounded-md px-4 py-2 bg-background"
-                  required
-                />
-                <input
-                  name="idNumber"
-                  placeholder="Identification Number"
-                  value={form.idNumber}
-                  onChange={handleChange}
-                  className="border border-border rounded-md px-4 py-2 bg-background"
-                  required
-                />
-                <input
-                  name="age"
-                  placeholder="Age"
-                  type="number"
-                  value={form.age}
-                  onChange={handleChange}
-                  className="border border-border rounded-md px-4 py-2 bg-background"
-                />
-                <select
-                  name="gender"
-                  value={form.gender}
-                  onChange={handleChange}
-                  className="border border-border rounded-md px-4 py-2 bg-background"
-                >
-                  <option value="">Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-                <input
-                  name="attendeeEmail"
-                  placeholder="Email Address"
-                  value={form.attendeeEmail}
-                  onChange={handleChange}
-                  className="border border-border rounded-md px-4 py-2 bg-background"
-                />
-                <select
-                  name="tshirtSize"
-                  value={form.tshirtSize}
-                  onChange={handleChange}
-                  className="border border-border rounded-md px-4 py-2 bg-background"
-                >
-                  <option value="">Select T shirt Size</option>
-                  {eventData.availableTshirtSizes?.map((size: string, index: number) => (
-                    <option key={index} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  name="raceCategory"
-                  value={form.raceCategory}
-                  onChange={handleChange}
-                  className="border border-border rounded-md px-4 py-2 bg-background"
-                >
-                  <option value="">Select Race Category</option>
-                  {eventData.raceCategories?.map((category: string, index: number) => (
-                    <option key={index} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  name="teamName"
-                  placeholder="Team Name"
-                  value={form.teamName}
-                  onChange={handleChange}
-                  className="border border-border rounded-md px-4 py-2 bg-background"
-                />
-              </div>
 
-              {/* Checkbox */}
+              {attendees.map((att, index) => (
+                <div
+                  key={index}
+                  className="mb-6 border border-border rounded-lg p-4"
+                >
+                  <h4 className="font-semibold mb-3">Attendee {index + 1}</h4>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <input
+                      placeholder="Name"
+                      value={att.name}
+                      onChange={(e) =>
+                        handleAttendeeChange(index, "name", e.target.value)
+                      }
+                      className="border border-border rounded-md px-4 py-2 bg-background"
+                      required
+                    />
+
+                    <input
+                      placeholder="Identification Number"
+                      value={att.idNumber}
+                      onChange={(e) =>
+                        handleAttendeeChange(index, "idNumber", e.target.value)
+                      }
+                      className="border border-border rounded-md px-4 py-2 bg-background"
+                      required
+                    />
+
+                    <input
+                      placeholder="Age"
+                      value={att.age}
+                      type="number"
+                      onChange={(e) =>
+                        handleAttendeeChange(index, "age", e.target.value)
+                      }
+                      className="border border-border rounded-md px-4 py-2 bg-background"
+                    />
+
+                    <select
+                      value={att.gender}
+                      onChange={(e) =>
+                        handleAttendeeChange(index, "gender", e.target.value)
+                      }
+                      className="border border-border rounded-md px-4 py-2 bg-background"
+                    >
+                      <option value="">Gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+
+                    <input
+                      placeholder="Email Address"
+                      value={att.attendeeEmail}
+                      onChange={(e) =>
+                        handleAttendeeChange(
+                          index,
+                          "attendeeEmail",
+                          e.target.value
+                        )
+                      }
+                      className="border border-border rounded-md px-4 py-2 bg-background"
+                    />
+{/* 
+                    <select
+                      value={att.tshirtSize}
+                      onChange={(e) =>
+                        handleAttendeeChange(
+                          index,
+                          "tshirtSize",
+                          e.target.value
+                        )
+                      }
+                      className="border border-border rounded-md px-4 py-2 bg-background"
+                    >
+                      <option value="">Select T shirt Size</option>
+                      {eventData?.availableTshirtSizes?.map((size: string) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select> */}
+
+                    {/* <select
+                      value={att.raceCategory}
+                      onChange={(e) =>
+                        handleAttendeeChange(
+                          index,
+                          "raceCategory",
+                          e.target.value
+                        )
+                      }
+                      className="border border-border rounded-md px-4 py-2 bg-background"
+                    >
+                      <option value="">Select Race Category</option>
+                      {eventData?.raceCategories?.map((cat: string) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select> */}
+
+                    <input
+                      placeholder="Team Name"
+                      value={att.teamName}
+                      onChange={(e) =>
+                        handleAttendeeChange(index, "teamName", e.target.value)
+                      }
+                      className="border border-border rounded-md px-4 py-2 bg-background"
+                    />
+                  </div>
+                </div>
+              ))}
+
+              {/* Agreement */}
               <div className="flex items-start gap-3 mt-4">
                 <input
                   type="checkbox"
@@ -322,12 +414,6 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
                   I agree to the event terms and waive all liabilities
                 </label>
               </div>
-              {/* 
-              <div className="mt-6">
-                <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">
-                  Next
-                </Button>
-              </div> */}
             </div>
           </form>
 
@@ -337,7 +423,10 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
               <h3 className="text-lg font-bold mb-1">{eventData.eventName}</h3>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar size={14} />
-                <span>{new Date(eventData.date).toLocaleDateString()} {eventData.time} </span>
+                <span>
+                  {new Date(eventData.date).toLocaleDateString()}{" "}
+                  {eventData.time}{" "}
+                </span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                 <MapPin size={14} />
@@ -382,46 +471,7 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
         </div>
       </section>
 
-      {/* Footer */}
-      {/* <footer className="bg-card border-t border-border py-12 px-6 md:px-8 mt-16">
-        <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8">
-          <div>
-            <h4 className="font-bold mb-3">Contact or Visit Us</h4>
-            <p className="text-sm text-muted-foreground">
-              123, Kuala Lumpur, Malaysia
-              <br />
-              info@gosports.com
-              <br />
-              +60 123 456 789
-            </p>
-          </div>
-          <div>
-            <h4 className="font-bold mb-3">Terms & Conditions</h4>
-            <p className="text-sm text-muted-foreground">Return and Refund Policy</p>
-          </div>
-          <div>
-            <h4 className="font-bold mb-3">Send Us a Message</h4>
-            <form className="space-y-2">
-              <input
-                type="email"
-                placeholder="Email"
-                className="w-full border border-border rounded px-3 py-2 text-sm bg-background"
-              />
-              <textarea
-                placeholder="Message"
-                rows={3}
-                className="w-full border border-border rounded px-3 py-2 text-sm bg-background"
-              />
-              <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                Send
-              </Button>
-            </form>
-          </div>
-        </div>
-        <div className="text-center text-sm text-muted-foreground mt-8 border-t border-border pt-6">
-          © 2025 GoSports. All rights reserved. Developed by Fillorie.
-        </div>
-      </footer> */}
+      <Footer />
     </main>
-  )
+  );
 }

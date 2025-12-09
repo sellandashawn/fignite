@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
 import { Header } from "@/components/header"
+import { Footer } from "@/components/footer"
 
 const HeroImage = () => (
   <div className="relative w-full h-96 md:h-[500px] overflow-hidden rounded-lg">
@@ -210,62 +211,10 @@ export default function AboutPage() {
           </div>
 
           {/* Footer Links */}
-          <div className="border-t border-border pt-8 grid md:grid-cols-4 gap-8">
-            <div>
-              <h4 className="font-bold mb-4 text-foreground">Quick Links</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>
-                  <Link href="/" className="hover:text-primary transition-colors">
-                    Home
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/about" className="hover:text-primary transition-colors">
-                    About Us
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/" className="hover:text-primary transition-colors">
-                    Events
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold mb-4 text-foreground">Legal</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>
-                  <Link href="/" className="hover:text-primary transition-colors">
-                    Terms & Conditions
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/" className="hover:text-primary transition-colors">
-                    Privacy Policy
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div className="md:col-span-2">
-              <h4 className="font-bold mb-4 text-foreground">Newsletter</h4>
-              <p className="text-sm text-muted-foreground mb-4">
-                Subscribe to stay updated with latest events and news.
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="email"
-                  className="flex-1 bg-secondary border border-border rounded px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-colors"
-                  placeholder="your@email.com"
-                />
-                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">Subscribe</Button>
-              </div>
-            </div>
-          </div>
+          <Footer/>
 
           {/* Copyright */}
-          <div className="border-t border-border mt-8 pt-8 text-center text-sm text-muted-foreground">
-            <p>&copy; 2025 GoSports. All rights reserved.</p>
-          </div>
+         
         </div>
       </section>
     </main>

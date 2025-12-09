@@ -20,21 +20,35 @@ export function Header(){
               <Link href="/" className="hover:text-primary transition-colors">
                 Home
               </Link>
-              <Link href="/about" className="hover:text-primary transition-colors">
+              <Link
+                href="/about"
+                className="hover:text-primary transition-colors"
+              >
                 About Us
               </Link>
-              <Link href="/events" className="hover:text-primary transition-colors">
+              <Link
+                href="/events"
+                className="hover:text-primary transition-colors"
+              >
                 Events
               </Link>
-              <Link href="/" className="hover:text-primary transition-colors">
+              <Link
+                href="/gallery"
+                className="hover:text-primary transition-colors"
+              >
                 Gallery
               </Link>
-              <Link href="/" className="hover:text-primary transition-colors">
+              <Link
+                href="/#contact"
+                className="hover:text-primary transition-colors"
+              >
                 Contact Us
               </Link>
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                Buy Tickets
-              </Button>
+              <Link href="/events">
+                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                  Buy Tickets
+                </Button>
+              </Link>
             </nav>
           </div>
         </div>
