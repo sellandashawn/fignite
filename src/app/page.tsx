@@ -290,7 +290,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Events - Next 3 Months */}
       <section id="events" className="py-24 px-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-16">
@@ -302,6 +301,7 @@ export default function Home() {
                 Next 3 months of amazing sporting experiences
               </p>
             </div>
+
             <Link
               href="/events"
               className="text-primary hover:text-primary/80 transition flex items-center gap-2 font-semibold whitespace-nowrap"
@@ -310,103 +310,111 @@ export default function Home() {
             </Link>
           </div>
 
-          {loading ? (
+          {/* ===================== LOADING ===================== */}
+          {loading && (
             <div className="text-center py-12">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
               <p className="text-muted-foreground">Loading events...</p>
             </div>
-          ) : error ? (
+          )}
+
+          {/* ===================== ERROR ===================== */}
+          {!loading && error && (
             <div className="text-center py-12">
               <p className="text-red-500 mb-4">{error}</p>
               <button
                 onClick={() => window.location.reload()}
                 className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:opacity-90 transition font-semibold text-sm"
               >
-                <div className="relative h-64 overflow-hidden bg-muted">
-                  <img
-                    src={event.image || "/placeholder.svg"}
-                    alt={event.eventName}
-                    className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
-                  />
-                  <div className="absolute top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold">
-                    {new Date(event.date).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </div>
-                  <div className="absolute top-4 left-4 bg-background/80 text-foreground px-3 py-1 rounded-full text-xs font-semibold">
-                    {new Date(event.date).toLocaleDateString("en-US", {
-                      month: "short",
-                    })}
-                  </div>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold mb-3">{event.eventName}</h3>
-                  <div className="space-y-3 mb-6">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <MapPin size={16} />
-                      <span className="text-sm">{event.venue}</span>
-                    </div>
-                    <div className="p-6">
-                      <h3 className="text-xl font-bold mb-3">{event.eventName}</h3>
-                      <div className="space-y-3 mb-6">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <MapPin size={16} />
-                          <span className="text-sm">{event.venue || "Location TBA"}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Calendar size={16} />
-                          <span className="text-sm">
-                            {new Date(event.date).toLocaleDateString('en-US', {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Users size={16} />
-                          <span className="text-sm">
-                            {event.ticketStatus?.maximumOccupancy || 'N/A'} participants
-                          </span>
-                        </div>
-                      </div>
-                      <Link
-                        href={`/events/${event.id}`}
-                        className="block"
-                      >
-                        <button className="w-full bg-primary text-primary-foreground py-2 rounded-lg hover:opacity-90 transition font-semibold text-sm">
-                          View Details
-                        </button>
-                      </Link>
-                    </div>
-                  </div>
+                Reload
+              </button>
+            </div>
+          )}
+
+          {/* ===================== EVENTS GRID ===================== */}
+          {!loading && !error && futureEvents.length > 0 && (
+            <>
+              <div className="grid md:grid-cols-3 gap-8">
+                {futureEvents.slice(0, visibleEvents).map((event) => (
                   <Link
                     key={event.id}
                     href={`/events/${event.id}`}
                     className="bg-card rounded-xl overflow-hidden border border-border hover:border-primary transition group cursor-pointer"
                   >
-                    <button className="w-full bg-primary text-primary-foreground py-2 rounded-lg hover:opacity-90 transition font-semibold text-sm">
-                      Register Event
-                    </button>
+                    <div className="relative h-64 overflow-hidden bg-muted">
+                      <img
+                        src={event.image || "/placeholder.svg"}
+                        alt={event.eventName}
+                        className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
+                      />
+
+                      {/* Date badge */}
+                      <div className="absolute top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold">
+                        {new Date(event.date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="p-6">
+                      <h3 className="text-xl font-bold mb-3">
+                        {event.eventName}
+                      </h3>
+
+                      <div className="space-y-3 mb-6">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <MapPin size={16} />
+                          <span className="text-sm">
+                            {event.venue || "Venue TBA"}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Calendar size={16} />
+                          <span className="text-sm">
+                            {new Date(event.date).toLocaleDateString()}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Users size={16} />
+                          <span className="text-sm">
+                            {event.ticketStatus?.maximumOccupancy || 0}{" "}
+                            participants
+                          </span>
+                        </div>
+                      </div>
+
+                      <button className="w-full bg-primary text-primary-foreground py-2 rounded-lg hover:opacity-90 transition font-semibold text-sm">
+                        View Details
+                      </button>
+                    </div>
                   </Link>
-                </div>
+                ))}
               </div>
 
-          <div className="text-center mt-12">
-            <Link href={`/events`}>
-              <button
-                onClick={() => setVisibleEvents(events.length)}
-                className="bg-primary text-primary-foreground px-8 py-3 rounded-lg hover:opacity-90 transition font-semibold"
-              >
-                View All Events
-              </button>
-            </Link>
-          </div>
+              {futureEvents.length > visibleEvents && (
+                <div className="text-center mt-12">
+                  <button
+                    onClick={() => setVisibleEvents(futureEvents.length)}
+                    className="bg-primary text-primary-foreground px-8 py-3 rounded-lg hover:opacity-90 transition font-semibold"
+                  >
+                    View All Events
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ===================== NO EVENTS ===================== */}
+          {!loading && !error && futureEvents.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">No events found.</p>
+            </div>
+          )}
         </div>
       </section>
-
       {/* Why Choose GoSports */}
       <section className="py-24 px-8 bg-card border-y border-border">
         <div className="max-w-7xl mx-auto">
