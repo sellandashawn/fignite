@@ -6,6 +6,7 @@ const getAuthToken = () => {
   return `${token}`;
 };
 
+// Add a new category
 export const addCategory = async (data) =>
   axios.post(`${API_BASE_URL}/category/`, data, {
     headers: {
@@ -14,7 +15,14 @@ export const addCategory = async (data) =>
     },
   });
 
+// Get all categories
 export const getCategories = async () => {
   const response = await axios.get(`${API_BASE_URL}/category/`);
+  return response.data;
+};
+
+// Get categories by type
+export const getCategoriesByType = async (type) => {
+  const response = await axios.get(`${API_BASE_URL}/category/type/${type}`);
   return response.data;
 };

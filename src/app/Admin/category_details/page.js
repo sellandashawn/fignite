@@ -1,11 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, Plus, X, Save } from "lucide-react";
-import { addCategory, getCategories } from "../../api/category";
+import { Search, Plus, X, Save, Filter } from "lucide-react";
+import {
+  addCategory,
+  getCategories,
+  getCategoriesByType,
+} from "../../api/category";
 
 export default function CategoryDetails() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -13,19 +18,30 @@ export default function CategoryDetails() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    type: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const categoryTypes = [
+    { value: "event", label: "Event", color: "bg-purple-100 text-purple-800" },
+    { value: "sports", label: "Sports", color: "bg-blue-100 text-blue-800" },
+  ];
+
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [typeFilter]);
 
   const fetchCategories = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await getCategories();
+      let response;
+      if (typeFilter === "all") {
+        response = await getCategories();
+      } else {
+        response = await getCategoriesByType(typeFilter);
+      }
       console.log("API Response:", response);
 
       let categoriesArray = [];
@@ -62,11 +78,15 @@ export default function CategoryDetails() {
       const searchTerm = searchQuery.toLowerCase();
       const categoryName = category?.name?.toLowerCase() || "";
       const categoryDescription = category?.description?.toLowerCase() || "";
+      const categoryType = category?.type?.toLowerCase() || "";
 
-      return (
+      const matchesSearch =
         categoryName.includes(searchTerm) ||
-        categoryDescription.includes(searchTerm)
-      );
+        categoryDescription.includes(searchTerm);
+
+      const matchesType = typeFilter === "all" || categoryType === typeFilter;
+
+      return matchesSearch && matchesType;
     })
     .sort((a, b) => {
       const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -105,13 +125,14 @@ export default function CategoryDetails() {
       const response = await addCategory({
         name: formData.name,
         description: formData.description || "",
+        type: formData.type,
       });
 
       console.log("Add category response:", response);
 
       await fetchCategories();
 
-      setFormData({ name: "", description: "" });
+      setFormData({ name: "", description: "", type: "" });
       setIsAddModalOpen(false);
       alert("Category added successfully!");
     } catch (err) {
@@ -123,13 +144,13 @@ export default function CategoryDetails() {
   };
 
   const openAddModal = () => {
-    setFormData({ name: "", description: "" });
+    setFormData({ name: "", description: "", type: "event" });
     setIsAddModalOpen(true);
   };
 
   const closeModal = () => {
     setIsAddModalOpen(false);
-    setFormData({ name: "", description: "" });
+    setFormData({ name: "", description: "", type: "" });
   };
 
   const formatDate = (dateString) => {
@@ -151,6 +172,16 @@ export default function CategoryDetails() {
     }
   };
 
+  const getTypeColor = (type) => {
+    const foundType = categoryTypes.find((t) => t.value === type);
+    return foundType ? foundType.color : "bg-gray-100 text-gray-800";
+  };
+
+  const getTypeLabel = (type) => {
+    const foundType = categoryTypes.find((t) => t.value === type);
+    return foundType ? foundType.label : "Event";
+  };
+
   const validCategories = currentPageCategories.filter(
     (category) =>
       category &&
@@ -169,7 +200,7 @@ export default function CategoryDetails() {
               Category Details
             </h1>
             <p className="text-slate-600">
-              Manage event categories and their details
+              Manage event and sports categories and their details
             </p>
           </div>
           <button
@@ -203,6 +234,48 @@ export default function CategoryDetails() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
+            <div className="relative">
+              <Filter
+                className="absolute left-3 top-3 text-slate-400"
+                size={20}
+              />
+              <select
+                value={typeFilter}
+                onChange={(e) => {
+                  setTypeFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="text-black appearance-none pl-10 pr-8 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/60 cursor-pointer"
+              >
+                <option value="all">All Types</option>
+                {categoryTypes.map((type) => (
+                  <option key={type.value} value={type.value}>
+                    {type.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Type Summary */}
+          <div className="flex gap-3">
+            {categoryTypes.map((type) => {
+              const count = categories.filter(
+                (cat) => cat.type === type.value
+              ).length;
+              return (
+                <div
+                  key={type.value}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                    type.color
+                  } ${
+                    typeFilter === type.value ? "ring-2 ring-primary/50" : ""
+                  }`}
+                >
+                  <span className="font-medium">{type.label}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -220,6 +293,9 @@ export default function CategoryDetails() {
                       Name
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
+                      Type
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
                       Description
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
@@ -231,11 +307,13 @@ export default function CategoryDetails() {
                   {validCategories.length === 0 ? (
                     <tr>
                       <td
-                        colSpan="3"
+                        colSpan="4"
                         className="px-6 py-8 text-center text-slate-500"
                       >
                         No categories found.{" "}
-                        {searchQuery && "Try a different search."}
+                        {searchQuery
+                          ? "Try a different search."
+                          : "Add your first category."}
                       </td>
                     </tr>
                   ) : (
@@ -244,8 +322,19 @@ export default function CategoryDetails() {
                         key={category._id || category.id}
                         className="hover:bg-slate-50 transition-colors"
                       >
-                        <td className="px-6 py-4 text-slate-700 font-medium">
-                          {category.name || "-"}
+                        <td className="px-6 py-4">
+                          <div className="text-slate-700 font-medium">
+                            {category.name || "-"}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getTypeColor(
+                              category.type
+                            )}`}
+                          >
+                            {getTypeLabel(category.type)}
+                          </span>
                         </td>
                         <td className="px-6 py-4 text-slate-600">
                           {category.description || "-"}
@@ -317,6 +406,29 @@ export default function CategoryDetails() {
                     className="w-full px-4 py-2 border text-black border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/60 focus:border-transparent disabled:opacity-50"
                     placeholder="Enter category name"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Category Type
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {categoryTypes.map((type) => (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({ ...prev, type: type.value }))
+                        }
+                        className={`px-3 py-2 rounded-lg border transition-all ${
+                          formData.type === type.value
+                            ? `${type.color} border-primary/50 ring-2 ring-primary/50`
+                            : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
+                        }`}
+                      >
+                        {type.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
