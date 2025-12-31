@@ -12,7 +12,7 @@ import {
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { getAllEvents } from "../api/event";
-import { getCategories } from "../api/category";
+import { getCategoriesByType } from "../api/category";
 
 
 export default function EventsPage() {
@@ -34,7 +34,7 @@ export default function EventsPage() {
           setEvents(eventsResponse.events);
         }
 
-        const categoriesResponse = await getCategories();
+        const categoriesResponse = await getCategoriesByType("event");
         if (categoriesResponse && categoriesResponse.categories) {
           setCategories(categoriesResponse.categories);
         }

@@ -25,7 +25,7 @@ import {
   updateEvent,
   getEventById,
 } from "../../api/event";
-import { getCategories } from "../../api/category";
+import { getCategoriesByType } from "../../api/category";
 
 export default function EventDetails() {
   const [showForm, setShowForm] = useState(false);
@@ -190,9 +190,29 @@ export default function EventDetails() {
 
   const fetchCategories = async () => {
     try {
-      const response = await getCategories();
-      console.log("Fetched categories:", response.categories);
-      setCategories(response.categories || []);
+      const response = await getCategoriesByType("event");
+      console.log("Fetched sports categories:", response);
+      let categoriesArray = [];
+
+      if (
+        response &&
+        response.categories &&
+        Array.isArray(response.categories)
+      ) {
+        categoriesArray = response.categories;
+      } else if (response && Array.isArray(response.categories)) {
+        categoriesArray = response.categories;
+      } else if (response && Array.isArray(response.data)) {
+        categoriesArray = response.data;
+      } else if (Array.isArray(response)) {
+        categoriesArray = response;
+      } else {
+        console.error("Unexpected response format:", response);
+        categoriesArray = [];
+      }
+
+      console.log("Categories array:", categoriesArray);
+      setCategories(categoriesArray);
     } catch (err) {
       console.error("Error fetching categories:", err);
       setError("Failed to fetch categories");
