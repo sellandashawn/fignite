@@ -4,14 +4,14 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { AuthProvider } from './context/AuthContext';
+import { NavbarProvider } from "@/context/navbar-context"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "GoSports - Sports Event Participation",
+  title: "Ignite - Sports Event Participation",
   description: "Join and participate in sports events across the globe",
-  generator: "v0.app",
 }
 
 export default function RootLayout({
@@ -22,11 +22,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans antialiased`}>
-        <AuthProvider>
-          {children}
-          <Analytics />
-        </AuthProvider>
+        <NavbarProvider>
+          <AuthProvider>
+            {children}
+            <Analytics />
+          </AuthProvider>
+        </NavbarProvider>
       </body>
     </html>
-  )
+  );
 }

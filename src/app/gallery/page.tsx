@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Search, ImageIcon, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import { Navbar } from "@/components/navbar";
 
 export default function GalleryPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -52,7 +53,7 @@ export default function GalleryPage() {
 
   return (
     <main className="bg-background text-foreground">
-      <Header />
+      <Navbar />
 
       {/* ===========================
           HERO CAROUSEL
