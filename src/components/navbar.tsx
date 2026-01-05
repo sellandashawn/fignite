@@ -20,6 +20,15 @@ export function Navbar() {
     }
   }
 
+
+  const handleBuyTickets = () => {
+    if (activeTab === "events") {
+      router.push("/events"); // Events tickets page
+    } else {
+      router.push("/sports"); // Sports tickets page
+    }
+  }
+
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur">
       <div className="container mx-auto flex h-16 items-center justify-between">
@@ -64,9 +73,14 @@ export function Navbar() {
             Contact Us
           </Link>
 
-          <Button>Get Tickets</Button>
+          <Button
+            onClick={handleBuyTickets}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            Buy Tickets
+          </Button>
         </div>
       </div>
     </nav>
-  )
+  );
 }

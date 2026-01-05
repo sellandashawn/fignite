@@ -16,7 +16,7 @@ import { getCategoriesByType } from "../api/category";
 import { Navbar } from "@/components/navbar";
 
 
-export default function EventsPage() {
+export default function SportsEventsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("upcoming");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -191,7 +191,7 @@ export default function EventsPage() {
       <section className="bg-gradient-to-r from-primary/10 to-transparent py-12 px-8 border-b border-border">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-bold mb-2">
-            Explore Events
+            Explore Sports Events
           </h1>
           <p className="text-lg text-muted-foreground">
             Discover and register for amazing sports events happening near you
