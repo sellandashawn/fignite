@@ -13,6 +13,7 @@ import Link from "next/link";
 import { Header } from "@/components/header";
 import { getAllEvents } from "../api/event";
 import { getCategoriesByType } from "../api/category";
+import { Navbar } from "@/components/navbar";
 
 
 export default function EventsPage() {
@@ -184,7 +185,7 @@ export default function EventsPage() {
   return (
     <main className="bg-background text-foreground">
       {/* Navigation */}
-      <Header />
+      <Navbar />
 
       {/* Page Header */}
       <section className="bg-gradient-to-r from-primary/10 to-transparent py-12 px-8 border-b border-border">

@@ -8,6 +8,8 @@ import Link from "next/link"
 import Image from "next/image"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { Navbar } from "@/components/navbar"
+import { useState } from "react"
 
 const HeroImage = () => (
   <div className="relative w-full h-96 md:h-[500px] overflow-hidden rounded-lg">
@@ -38,11 +40,11 @@ const FeatureCard = ({
 )
 
 export default function AboutPage() {
+  const [activeTab, setActiveTab] = useState<"events" | "sports">("events");
   return (
     <main className="bg-background text-foreground min-h-screen">
       {/* Navigation Header */}
-     <Header/>
-
+      <Navbar />
       {/* About Section */}
       <section className="py-12 md:py-20 px-4 sm:px-6 lg:px-8 border-b border-border">
         <div className="max-w-7xl mx-auto">
