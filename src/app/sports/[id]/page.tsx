@@ -93,9 +93,9 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
         { time: "5:00 PM", activity: "Daily Awards & Social Gathering" },
       ],
     },
-  };
+  }
 
-  const event = events[params.id] || events["1"];
+  const event = events[params.id] || events["1"]
 
   useEffect(() => {
     const fetchEventData = async () => {
@@ -154,14 +154,12 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
   console.log("Event Data:", eventData);
 
   if (!eventData) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading event...</p>
-        </div>
+    return <div className="flex justify-center items-center min-h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-muted-foreground">Loading event...</p>
       </div>
-    );
+    </div>;
   }
 
   const totalPrice = (
@@ -206,11 +204,7 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
       <section className="py-12 px-8">
         <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8">
           {/* Left Column - Event Details */}
-          <div
-            className={`${
-              shouldShowTicketBooking ? "md:col-span-2" : "md:col-span-3"
-            }`}
-          >
+          <div className={`${shouldShowTicketBooking ? 'md:col-span-2' : 'md:col-span-3'}`}>
             {/* Hero Image */}
             <div className="relative h-96 md:h-[500px] rounded-xl overflow-hidden mb-8 bg-muted">
               <img
@@ -239,9 +233,7 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
                     <Calendar size={16} />
                     <span className="text-xs font-semibold">DATE</span>
                   </div>
-                  <p className="font-bold text-sm">
-                    {new Date(eventData.date).toLocaleDateString()}
-                  </p>
+                  <p className="font-bold text-sm">{new Date(eventData.date).toLocaleDateString()}</p>
                 </div>
                 <div className="bg-card p-4 rounded-lg border border-border">
                   <div className="flex items-center gap-2 text-muted-foreground mb-2">
@@ -255,26 +247,22 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
                     <Users size={16} />
                     <span className="text-xs font-semibold">PARTICIPANTS</span>
                   </div>
-                  <p className="font-bold">
-                    {eventData.ticketStatus.maximumOccupancy}
-                  </p>
+                  <p className="font-bold">{eventData.ticketStatus.maximumOccupancy}</p>
                 </div>
               </div>
 
               {/* Ticket Availability Badge */}
               {shouldShowTicketBooking && (
                 <div className="mb-8">
-                  <div
-                    className={`inline-flex items-center px-4 py-2 rounded-lg font-semibold ${
-                      availableTickets > 0
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }`}
-                  >
+                  <div className={`inline-flex items-center px-4 py-2 rounded-lg font-semibold ${availableTickets > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                     {availableTickets > 0 ? (
-                      <>Available Tickets : {availableTickets}</>
+                      <>
+                        Available Tickets : {availableTickets}
+                      </>
                     ) : (
-                      <>Sold Out</>
+                      <>
+                        Sold Out
+                      </>
                     )}
                   </div>
                 </div>
@@ -311,9 +299,7 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
                     <div className="text-primary font-bold whitespace-nowrap">
                       {item.time}
                     </div>
-                    <div className="text-muted-foreground">
-                      {item.activity} {}
-                    </div>
+                    <div className="text-muted-foreground">{item.activity} { }</div>
                   </div>
                 ))}
               </div>
@@ -327,23 +313,17 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
               <div className="bg-card rounded-xl border border-border p-8 sticky top-24 space-y-6">
                 <div>
                   <h3 className="text-xl font-bold mb-2">Tickets</h3>
-                  <p className="text-muted-foreground text-sm">
-                    {eventData.eventName}
-                  </p>
+                  <p className="text-muted-foreground text-sm">{eventData.eventName}</p>
                 </div>
 
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Ticket Price</span>
-                    <span className="font-bold text-lg">
-                      $ {eventData.perTicketPrice}
-                    </span>
+                    <span className="font-bold text-lg">$ {eventData.perTicketPrice}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Available</span>
-                    <span className="font-bold">
-                      {availableTickets} tickets
-                    </span>
+                    <span className="font-bold">{availableTickets} tickets</span>
                   </div>
                   <div className="border-t border-border pt-3 flex justify-between items-center">
                     <span className="text-muted-foreground font-semibold">
@@ -357,18 +337,12 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
 
                 {/* Quantity Selector */}
                 <div>
-                  <label className="block text-sm font-semibold mb-3">
-                    Quantity
-                  </label>
+                  <label className="block text-sm font-semibold mb-3">Quantity</label>
                   <div className="flex items-center gap-4 bg-background rounded-lg p-3">
                     <button
                       onClick={decrementQuantity}
                       disabled={quantity <= 1}
-                      className={`w-8 h-8 rounded-lg border transition flex items-center justify-center ${
-                        quantity <= 1
-                          ? "border-border/50 text-muted-foreground/50 cursor-not-allowed"
-                          : "border-border hover:border-primary hover:bg-primary/10"
-                      }`}
+                      className={`w-8 h-8 rounded-lg border transition flex items-center justify-center ${quantity <= 1 ? 'border-border/50 text-muted-foreground/50 cursor-not-allowed' : 'border-border hover:border-primary hover:bg-primary/10'}`}
                     >
                       <Minus size={16} />
                     </button>
@@ -383,11 +357,7 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
                     <button
                       onClick={incrementQuantity}
                       disabled={quantity >= availableTickets}
-                      className={`w-8 h-8 rounded-lg border transition flex items-center justify-center ${
-                        quantity >= availableTickets
-                          ? "border-border/50 text-muted-foreground/50 cursor-not-allowed"
-                          : "border-border hover:border-primary hover:bg-primary/10"
-                      }`}
+                      className={`w-8 h-8 rounded-lg border transition flex items-center justify-center ${quantity >= availableTickets ? 'border-border/50 text-muted-foreground/50 cursor-not-allowed' : 'border-border hover:border-primary hover:bg-primary/10'}`}
                     >
                       <Plus size={16} />
                     </button>
@@ -395,9 +365,7 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
                 </div>
 
                 {/* Get Tickets Button */}
-                <Link
-                  href={`/events/${eventData.id}/get-tickets?quantity=${quantity}`}
-                >
+                <Link href={`/events/${eventData.id}/get-tickets?quantity=${quantity}`}>
                   <button className="w-full bg-primary text-primary-foreground py-3 rounded-lg hover:opacity-90 transition font-bold text-lg">
                     GET TICKETS
                   </button>
@@ -426,8 +394,7 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
                 </div>
                 <h3 className="text-xl font-bold mb-2">Event Has Ended</h3>
                 <p className="text-muted-foreground mb-4">
-                  This event has already taken place. Registration is no longer
-                  available.
+                  This event has already taken place. Registration is no longer available.
                 </p>
                 <Link href="/events">
                   <button className="inline-flex items-center px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition font-semibold">
@@ -444,9 +411,7 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
               <div className="bg-card rounded-xl border border-border p-8 sticky top-24 space-y-6">
                 <div>
                   <h3 className="text-xl font-bold mb-2">Tickets</h3>
-                  <p className="text-muted-foreground text-sm">
-                    {eventData.eventName}
-                  </p>
+                  <p className="text-muted-foreground text-sm">{eventData.eventName}</p>
                 </div>
 
                 <div className="text-center py-8">

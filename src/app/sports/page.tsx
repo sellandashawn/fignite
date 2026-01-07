@@ -13,10 +13,9 @@ import Link from "next/link";
 import { Header } from "@/components/header";
 import { getAllEvents } from "../api/event";
 import { getCategoriesByType } from "../api/category";
-import { Navbar } from "@/components/navbar";
 
 
-export default function SportsEventsPage() {
+export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("upcoming");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -185,13 +184,13 @@ export default function SportsEventsPage() {
   return (
     <main className="bg-background text-foreground">
       {/* Navigation */}
-      <Navbar />
+      <Header />
 
       {/* Page Header */}
       <section className="bg-gradient-to-r from-primary/10 to-transparent py-12 px-8 border-b border-border">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-bold mb-2">
-            Explore Sports Events
+            Explore Events
           </h1>
           <p className="text-lg text-muted-foreground">
             Discover and register for amazing sports events happening near you
