@@ -8,6 +8,7 @@ import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { registerParticipantWithPayment } from '../api/participant'
 import { Footer } from "@/components/footer";
+import { Navbar } from "@/components/navbar"
 
 interface AttendeeInfo {
   name: string
@@ -221,7 +222,7 @@ export default function PaymentSuccessPage() {
 
   return (
     <main className="bg-background text-foreground min-h-screen">
-      <Header />
+      <Navbar />
 
       {/* Success Header */}
       <section className="bg-gradient-to-r from-green-950/20 to-emerald-950/20 py-8 px-6 md:px-8">

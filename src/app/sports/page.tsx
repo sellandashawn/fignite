@@ -8,19 +8,20 @@ import {
   Search,
   SlidersHorizontal,
   ChevronDown,
+  Trophy,
 } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/header";
-import { getAllEvents } from "../api/event";
+import { getAllSports } from "../api/sports";
 import { getCategoriesByType } from "../api/category";
+import { Navbar } from "@/components/navbar";
 
-
-export default function EventsPage() {
+export default function SportsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("upcoming");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [selectedSport, setSelectedSport] = useState("all");
-  const [events, setEvents] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [sports, setSports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
 
@@ -29,18 +30,18 @@ export default function EventsPage() {
       try {
         setLoading(true);
 
-        const eventsResponse = await getAllEvents();
-        if (eventsResponse && eventsResponse.events) {
-          setEvents(eventsResponse.events);
+        const sportsResponse = await getAllSports();
+        if (sportsResponse && sportsResponse.sports) {
+          setSports(sportsResponse.sports);
         }
 
-        const categoriesResponse = await getCategoriesByType("event");
+        const categoriesResponse = await getCategoriesByType("sports");
         if (categoriesResponse && categoriesResponse.categories) {
           setCategories(categoriesResponse.categories);
         }
 
       } catch (error) {
-        console.log(error);
+        console.log("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
@@ -49,76 +50,7 @@ export default function EventsPage() {
     fetchData();
   }, []);
 
-  console.log("Events ", events);
-
-  const allEvents = [
-    {
-      id: 1,
-      title: "Urban Marathon Carnival 2025 - Walkers & Juniors",
-      location: "Stadium Park, Malaysia",
-      date: "Apr 20, 2025",
-      participants: "2,400",
-      image: "/images/marathon-race-urban-city.jpg",
-      isSpecial: true,
-      sport: "Running",
-      price: "$45",
-    },
-    {
-      id: 2,
-      title: "Beach Volleyball Championship Series",
-      location: "Miami Beach, USA",
-      date: "May 2, 2025",
-      participants: "1,800",
-      image: "/images/beach-volleyball-tournament.jpg",
-      isSpecial: false,
-      sport: "Volleyball",
-      price: "$55",
-    },
-    {
-      id: 3,
-      title: "Mountain Bike Challenge Pro Circuit",
-      location: "Colorado Springs, USA",
-      date: "May 31, 2025",
-      participants: "980",
-      image: "/images/mountain-bike-trail-race.jpg",
-      isSpecial: true,
-      sport: "Cycling",
-      price: "$75",
-    },
-    {
-      id: 4,
-      title: "Triathlon Series Grand Finale",
-      location: "San Francisco, USA",
-      date: "Jun 10, 2025",
-      participants: "1,200",
-      image: "/images/triathlon-swimming-cycling-running.jpg",
-      isSpecial: false,
-      sport: "Triathlon",
-      price: "$85",
-    },
-    {
-      id: 5,
-      title: "Tennis Championship Elite Tournament",
-      location: "Los Angeles, USA",
-      date: "Jun 15, 2025",
-      participants: "640",
-      image: "/images/tennis-championship-court.jpg",
-      isSpecial: true,
-      sport: "Tennis",
-      price: "$65",
-    },
-    {
-      id: 6,
-      title: "CrossFit Games National Qualifier",
-      location: "Austin, Texas, USA",
-      date: "Jul 1, 2025",
-      participants: "1,500",
-      image: "/images/crossfit-competition-athletes.jpg",
-      isSpecial: false,
-      sport: "CrossFit",
-      price: "$95",
-    },
-  ];
+  console.log("Sports ", sports);
 
   const getCategoryName = (categoryIdentifier) => {
     if (!categoryIdentifier) return "N/A";
@@ -144,17 +76,18 @@ export default function EventsPage() {
     return category ? category.name : "N/A";
   };
 
-  const filteredEvents = events
-    .filter((event) => {
+  const filteredSports = sports
+    .filter((sport) => {
       const matchesSearch =
-        event.eventName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        event.venue?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        getCategoryName(event.category)?.toLowerCase().includes(searchQuery.toLowerCase());
+        sport.sportName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        sport.venue?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getCategoryName(sport.category)?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        sport.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesSport =
-        selectedSport === "all" || getCategoryName(event.category)?.toLowerCase() === selectedSport.toLowerCase();
+      const matchesCategory =
+        selectedCategory === "all" || getCategoryName(sport.category)?.toLowerCase() === selectedCategory.toLowerCase();
 
-      return matchesSearch && matchesSport;
+      return matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
       if (sortBy === "upcoming") {
@@ -172,11 +105,13 @@ export default function EventsPage() {
       if (sortBy === "newest") {
         return new Date(b.createdAt) - new Date(a.createdAt);
       }
+      if (sortBy === "registration") {
+        return (b.participationStatus?.confirmedParticipants || 0) - (a.participationStatus?.confirmedParticipants || 0);
+      }
       return 0;
     });
 
-
-  const sports = [
+  const sportCategories = [
     "all",
     ...categories.map(category => category.name)
   ];
@@ -184,16 +119,16 @@ export default function EventsPage() {
   return (
     <main className="bg-background text-foreground">
       {/* Navigation */}
-      <Header />
+      <Navbar />
 
       {/* Page Header */}
       <section className="bg-gradient-to-r from-primary/10 to-transparent py-12 px-8 border-b border-border">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-bold mb-2">
-            Explore Events
+            Explore Sports Events
           </h1>
           <p className="text-lg text-muted-foreground">
-            Discover and register for amazing sports events happening near you
+            Discover and register for exciting sports competitions and tournaments
           </p>
         </div>
       </section>
@@ -210,7 +145,7 @@ export default function EventsPage() {
               />
               <input
                 type="text"
-                placeholder="Search Sport Type ... or Search Events"
+                placeholder="Search sports, venues, or categories..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:border-primary transition"
@@ -226,6 +161,7 @@ export default function EventsPage() {
               >
                 <option value="upcoming">Sort by: Upcoming</option>
                 <option value="newest">Sort by: Newest</option>
+                <option value="registration">Sort by: Most Registered</option>
               </select>
               <ChevronDown
                 size={16}
@@ -245,102 +181,120 @@ export default function EventsPage() {
 
           {/* Sport Filter Tags */}
           {filterOpen && (
-            <div className="flex flex-wrap gap-3 p-4 bg-card rounded-lg border border-border">
-              {sports.map((sport) => (
-                <button
-                  key={sport}
-                  onClick={() => setSelectedSport(sport)}
-                  className={`px-4 py-2 rounded-full font-semibold transition ${selectedSport === sport
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-card border border-border hover:border-primary text-foreground"
-                    }`}
-                >
-                  {sport.charAt(0).toUpperCase() + sport.slice(1)}
-                </button>
-              ))}
+            <div className="space-y-6 p-4 bg-card rounded-lg border border-border">
+              {/* Category Filter */}
+              <div>
+                <h4 className="font-semibold mb-3 text-sm text-muted-foreground">CATEGORIES</h4>
+                <div className="flex flex-wrap gap-3">
+                  {sportCategories.map((category) => (
+                    <button
+                      key={category}
+                      onClick={() => setSelectedCategory(category)}
+                      className={`px-4 py-2 rounded-full font-semibold transition ${selectedCategory === category
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-card border border-border hover:border-primary text-foreground"
+                        }`}
+                    >
+                      {category.charAt(0).toUpperCase() + category.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
       </section>
 
-      {/* Events Grid */}
+      {/* Sports Grid */}
       {loading ? (
         <div className="flex justify-center items-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading events...</p>
+            <p className="text-muted-foreground">Loading sports events...</p>
           </div>
         </div>
       ) : (
         <section className="py-12 px-8">
           <div className="max-w-7xl mx-auto">
-            {filteredEvents.length > 0 ? (
+            {filteredSports.length > 0 ? (
               <>
                 <div className="grid md:grid-cols-3 gap-8 mb-12">
-                  {filteredEvents.map((event) => (
+                  {filteredSports.map((sport) => (
                     <Link
-                      key={event.id}
-                      href={`/events/${event.id}`}
-                      className={`bg-card rounded-xl overflow-hidden border border-border hover:border-primary transition group cursor-pointer ${event.status === "cancelled" || event.status === "postponed" ? "opacity-50 pointer-events-none" : ""
+                      key={sport.id}
+                      href={`/sports/${sport.id}`}
+                      className={`bg-card rounded-xl overflow-hidden border border-border hover:border-primary transition group cursor-pointer ${sport.status === "cancelled" || sport.status === "postponed" ? "opacity-50 pointer-events-none" : ""
                         }`}
                     >
                       <div className="relative h-56 overflow-hidden bg-muted">
                         <img
-                          src={event.image || "/placeholder.svg"}
-                          alt={event.eventName}
+                          src={sport.image || "/placeholder.svg"}
+                          alt={sport.sportName}
                           className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
                         />
                         <div
-                          className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold ${event.status === "completed"
+                          className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold ${sport.status === "completed"
                             ? "bg-green-500 text-white"
-                            : event.status === "ongoing"
+                            : sport.status === "ongoing"
                               ? "bg-blue-500 text-white"
-                              : event.status === "cancelled"
+                              : sport.status === "cancelled"
                                 ? "bg-red-500 text-white"
-                                : event.status === "postponed"
+                                : sport.status === "postponed"
                                   ? "bg-yellow-500 text-white"
                                   : "bg-primary text-primary-foreground"
                             }`}
                         >
-                          {event.status?.charAt(0).toUpperCase() +
-                            event.status?.slice(1) || "Upcoming"}
+                          {sport.status?.charAt(0).toUpperCase() +
+                            sport.status?.slice(1) || "Upcoming"}
                         </div>
-                        {(event.status === "cancelled" || event.status === "postponed") && (
+                        {(sport.status === "cancelled" || sport.status === "postponed") && (
                           <div className="absolute inset-0 bg-black opacity-50 flex items-center justify-center">
                             <span className="text-white font-bold text-xl">
-                              Event {event.status?.charAt(0).toUpperCase() + event.status?.slice(1)}
+                              Sport {sport.status?.charAt(0).toUpperCase() + sport.status?.slice(1)}
                             </span>
                           </div>
                         )}
                       </div>
                       <div className="p-6">
                         <h3 className="text-lg font-bold mb-3 line-clamp-2 group-hover:text-primary transition">
-                          {event.eventName}
+                          {sport.sportName}
                         </h3>
                         <div className="space-y-3 mb-4">
                           <div className="flex items-center gap-2 text-muted-foreground text-sm">
                             <MapPin size={16} className="flex-shrink-0" />
-                            <span>{event.venue}</span>
+                            <span>{sport.venue}</span>
                           </div>
                           <div className="flex items-center gap-2 text-muted-foreground text-sm">
                             <Calendar size={16} className="flex-shrink-0" />
                             <span>
-                              {new Date(event.date).toLocaleDateString()}
+                              {new Date(sport.date).toLocaleDateString()} at {sport.time}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 text-muted-foreground text-sm">
                             <Users size={16} className="flex-shrink-0" />
                             <span>
-                              {event.ticketStatus.maximumOccupancy} participating
+                              {sport.participationStatus?.confirmedParticipants || 0} / {sport.participationStatus?.maximumParticipants || 0} participants
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                            <Trophy size={16} className="flex-shrink-0" />
+                            <span className="capitalize">
+                              {getCategoryName(sport.category)}
+                              {sport.teamSize && sport.teamSize > 1 && ` • Team of ${sport.teamSize}`}
                             </span>
                           </div>
                         </div>
                         <div className="flex justify-between items-center pt-4 border-t border-border">
-                          <span className="font-bold text-primary">
-                            $ {event.perTicketPrice}
-                          </span>
-                          <button className="text-primary hover:text-primary/80 transition font-semibold text-sm">
-                            ATTEND
+                          <div>
+                            <span className="font-bold text-primary">
+                              $ {sport.registrationFee || "0.00"}
+                            </span>
+                            <span className="text-xs text-muted-foreground ml-2">
+                              registration fee
+                            </span>
+                          </div>
+                          <button className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition font-semibold text-sm">
+                            REGISTER
                           </button>
                         </div>
                       </div>
@@ -348,7 +302,7 @@ export default function EventsPage() {
                   ))}
                 </div>
 
-                {filteredEvents.length > 6 && (
+                {filteredSports.length > 6 && (
                   <div className="text-center">
                     <button className="bg-primary text-primary-foreground px-8 py-3 rounded-lg hover:opacity-90 transition font-semibold">
                       View More
@@ -359,12 +313,12 @@ export default function EventsPage() {
             ) : (
               <div className="text-center py-16">
                 <p className="text-xl text-muted-foreground mb-4">
-                  No events found matching your criteria
+                  No sports events found matching your criteria
                 </p>
                 <button
                   onClick={() => {
                     setSearchQuery("");
-                    setSelectedSport("all");
+                    setSelectedCategory("all");
                   }}
                   className="text-primary hover:text-primary/80 transition font-semibold"
                 >
@@ -376,17 +330,6 @@ export default function EventsPage() {
         </section>
       )}
 
-      {/* CTA Section */}
-      {/* <section className="py-24 px-8 bg-primary text-primary-foreground">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-6">Can't Find Your Event?</h2>
-          <p className="text-lg mb-8 opacity-95">Contact us to suggest events or become an event organizer</p>
-          <button className="bg-primary-foreground text-primary px-8 py-3 rounded-lg hover:opacity-90 transition font-semibold">
-            Get in Touch
-          </button>
-        </div>
-      </section> */}
-
       {/* Footer */}
       <footer className="bg-card border-t border-border py-16 px-8">
         <div className="max-w-7xl mx-auto">
@@ -394,7 +337,7 @@ export default function EventsPage() {
             <div>
               <h4 className="font-bold mb-4">GoSports</h4>
               <p className="text-muted-foreground text-sm">
-                Connecting athletes and events worldwide
+                Connecting athletes and sports events worldwide
               </p>
             </div>
             <div>
