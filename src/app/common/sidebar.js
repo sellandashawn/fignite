@@ -8,6 +8,7 @@ import {
   Users,
   LogOut,
   Tags,
+  Dumbbell,
 } from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
 
@@ -17,6 +18,7 @@ export default function Sidebar({ activeMenu, setActiveMenu }) {
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "eventDetails", label: "Event Details", icon: Calendar },
+    { id: "sports", label: "Sports Details", icon: Dumbbell },
     { id: "categoryDetails", label: "Category Details", icon: Tags },
     { id: "paymentDetails", label: "Payment Details", icon: CreditCard },
     { id: "registrationDetails", label: "Registration Details", icon: Users },

@@ -3,41 +3,73 @@
 import { useState, useEffect } from "react"
 import { ArrowRight, Calendar, MapPin, Users, Trophy, Mail, Phone, Zap, BarChart3, Heart } from "lucide-react"
 import { Header } from "@/components/header"
-import { getAllEvents } from "../app/api/event";
-import Link from "next/link";
+import { getAllEvents } from "../app/api/event"
+import { getAllSports } from "./api/sports"
+import Link from "next/link"
 
 export default function Home() {
   const [timeLeft, setTimeLeft] = useState({ days: 45, hours: 12, minutes: 30, seconds: 45 })
   const [visibleEvents, setVisibleEvents] = useState(6)
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [visibleSports, setVisibleSports] = useState(6)
+  const [events, setEvents] = useState([])
+  const [sports, setSports] = useState([])
+  const [loadingEvents, setLoadingEvents] = useState(true)
+  const [loadingSports, setLoadingSports] = useState(true)
+  const [errorEvents, setErrorEvents] = useState(null)
+  const [errorSports, setErrorSports] = useState(null)
+  const [activeTab, setActiveTab] = useState("events")
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        setLoading(true);
-        setError(null);
-        const response = await getAllEvents();
-        console.log("Fetched events:", response);
+        setLoadingEvents(true)
+        setErrorEvents(null)
+        const response = await getAllEvents()
+        console.log("Fetched events:", response)
 
         if (response && response.events) {
-          setEvents(response.events);
+          setEvents(response.events)
         } else {
-          console.error("Unexpected response structure:", response);
-          setEvents([]);
+          console.error("Unexpected response structure:", response)
+          setEvents([])
         }
       } catch (error) {
-        console.error("Error fetching events:", error);
-        setError("Failed to load events. Please try again later.");
-        setEvents([]);
+        console.error("Error fetching events:", error)
+        setErrorEvents("Failed to load events. Please try again later.")
+        setEvents([])
       } finally {
-        setLoading(false);
+        setLoadingEvents(false)
       }
-    };
+    }
 
-    fetchEvents();
-  }, []);
+    fetchEvents()
+  }, [])
+
+  useEffect(() => {
+    const fetchSports = async () => {
+      try {
+        setLoadingSports(true)
+        setErrorSports(null)
+        const response = await getAllSports()
+        console.log("Fetched Sports:", response)
+
+        if (response && response.sports) {
+          setSports(response.sports)
+        } else {
+          console.error("Unexpected response structure:", response)
+          setSports([])
+        }
+      } catch (error) {
+        console.error("Error fetching sports:", error)
+        setErrorSports("Failed to load sports. Please try again later.")
+        setSports([])
+      } finally {
+        setLoadingSports(false)
+      }
+    }
+
+    fetchSports()
+  }, [])
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -61,71 +93,17 @@ export default function Home() {
     return () => clearInterval(timer)
   }, [])
 
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(0, 0, 0, 0);
-  const futureEvents = events.filter(event => {
-    if (!event.date) return false;
-    const eventDate = new Date(event.date);
-    return eventDate >= tomorrow;
-  }).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  tomorrow.setHours(0, 0, 0, 0)
 
-  // const events = [
-  //   {
-  //     id: 1,
-  //     title: "Urban Marathon",
-  //     location: "New York City",
-  //     date: "APR 15-16",
-  //     month: "April",
-  //     participants: "2,400",
-  //     image: "/images/marathon-race-urban-city.jpg",
-  //   },
-  //   {
-  //     id: 2,
-  //     title: "Beach Volleyball",
-  //     location: "Miami Beach",
-  //     date: "MAY 2-4",
-  //     month: "May",
-  //     participants: "1,800",
-  //     image: "/images/beach-volleyball-tournament.jpg",
-  //   },
-  //   {
-  //     id: 3,
-  //     title: "Mountain Bike Challenge",
-  //     location: "Colorado Springs",
-  //     date: "MAY 31-JUN 1",
-  //     month: "May",
-  //     participants: "980",
-  //     image: "/images/mountain-bike-trail-race.jpg",
-  //   },
-  //   {
-  //     id: 4,
-  //     title: "Triathlon Series",
-  //     location: "San Francisco",
-  //     date: "JUN 10-12",
-  //     month: "June",
-  //     participants: "1,200",
-  //     image: "/images/triathlon-swimming-cycling-running.jpg",
-  //   },
-  //   {
-  //     id: 5,
-  //     title: "Tennis Championship",
-  //     location: "Los Angeles",
-  //     date: "JUN 15-20",
-  //     month: "June",
-  //     participants: "640",
-  //     image: "/images/tennis-championship-court.jpg",
-  //   },
-  //   {
-  //     id: 6,
-  //     title: "CrossFit Games",
-  //     location: "Austin, Texas",
-  //     date: "JUL 1-3",
-  //     month: "July",
-  //     participants: "1,500",
-  //     image: "/images/crossfit-competition-athletes.jpg",
-  //   },
-  // ]
+  const futureEvents = events
+    .filter(event => {
+      if (!event.date) return false
+      const eventDate = new Date(event.date)
+      return eventDate >= tomorrow
+    })
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
 
   const testimonials = [
     {
@@ -152,111 +130,111 @@ export default function Home() {
 
   return (
     <main className="bg-background text-foreground">
-      {/* Navigation */}
       <Header />
 
-      {/* Hero Section with Integrated Countdown */}
+      {/* Hero Section */}
       <section className="relative min-h-screen bg-gradient-to-b from-card to-background overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-96 h-96 bg-primary rounded-full blur-3xl"></div>
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-8 py-20">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-28">
           <div className="text-center mb-12">
             <div className="inline-block mb-6 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full">
               <p className="text-primary font-semibold text-sm">
                 ANNUAL CHAMPIONSHIP EVENT
               </p>
             </div>
-            <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight text-balance">
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mb-6 leading-tight text-balance">
               The Biggest Championship Starts Soon
             </h1>
-            <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl text-muted-foreground mb-8 sm:mb-12 max-w-2xl mx-auto">
               Join thousands of athletes worldwide for the most prestigious
               sports championship. Limited spots available.
             </p>
 
             {/* Countdown in Hero */}
-            <div className="grid grid-cols-4 gap-4 max-w-2xl mx-auto mb-12">
-              <div className="bg-card rounded-lg p-6 border border-border hover:border-primary transition">
-                <div className="text-4xl md:text-5xl font-bold text-primary mb-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-2xl mx-auto mb-8 sm:mb-12">
+              <div className="bg-card rounded-lg p-4 sm:p-6 border border-border hover:border-primary transition">
+                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary mb-1 sm:mb-2">
                   {String(timeLeft.days).padStart(2, "0")}
                 </div>
-                <div className="text-sm text-muted-foreground">Days</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Days</div>
               </div>
-              <div className="bg-card rounded-lg p-6 border border-border hover:border-primary transition">
-                <div className="text-4xl md:text-5xl font-bold text-primary mb-2">
+              <div className="bg-card rounded-lg p-4 sm:p-6 border border-border hover:border-primary transition">
+                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary mb-1 sm:mb-2">
                   {String(timeLeft.hours).padStart(2, "0")}
                 </div>
-                <div className="text-sm text-muted-foreground">Hours</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Hours</div>
               </div>
-              <div className="bg-card rounded-lg p-6 border border-border hover:border-primary transition">
-                <div className="text-4xl md:text-5xl font-bold text-primary mb-2">
+              <div className="bg-card rounded-lg p-4 sm:p-6 border border-border hover:border-primary transition">
+                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary mb-1 sm:mb-2">
                   {String(timeLeft.minutes).padStart(2, "0")}
                 </div>
-                <div className="text-sm text-muted-foreground">Minutes</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Minutes</div>
               </div>
-              <div className="bg-card rounded-lg p-6 border border-border hover:border-primary transition">
-                <div className="text-4xl md:text-5xl font-bold text-primary mb-2">
+              <div className="bg-card rounded-lg p-4 sm:p-6 border border-border hover:border-primary transition">
+                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary mb-1 sm:mb-2">
                   {String(timeLeft.seconds).padStart(2, "0")}
                 </div>
-                <div className="text-sm text-muted-foreground">Seconds</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Seconds</div>
               </div>
             </div>
 
-            <div className="flex gap-4 justify-center flex-wrap">
-              <button className="bg-primary text-primary-foreground px-8 py-3 rounded-lg hover:opacity-90 transition font-semibold flex items-center gap-2 justify-center">
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+              <button className="bg-primary text-primary-foreground px-6 sm:px-8 py-3 rounded-lg hover:opacity-90 transition font-semibold flex items-center gap-2 justify-center">
                 Register Now <ArrowRight size={20} />
               </button>
-              <button className="border border-primary text-primary px-8 py-3 rounded-lg hover:bg-primary hover:text-primary-foreground transition font-semibold">
+              <button className="border border-primary text-primary px-6 sm:px-8 py-3 rounded-lg hover:bg-primary hover:text-primary-foreground transition font-semibold">
                 Learn More
               </button>
             </div>
           </div>
 
           {/* Community Stats */}
-          <div className="grid md:grid-cols-4 gap-8 mt-24">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 mt-12 sm:mt-16 lg:mt-24">
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary mb-1">50K+</div>
-              <p className="text-muted-foreground text-sm">Active Athletes</p>
+              <div className="text-2xl sm:text-3xl font-bold text-primary mb-1">50K+</div>
+              <p className="text-xs sm:text-sm text-muted-foreground">Active Athletes</p>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary mb-1">200+</div>
-              <p className="text-muted-foreground text-sm">Events Yearly</p>
+              <div className="text-2xl sm:text-3xl font-bold text-primary mb-1">200+</div>
+              <p className="text-xs sm:text-sm text-muted-foreground">Events Yearly</p>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary mb-1">85</div>
-              <p className="text-muted-foreground text-sm">Countries</p>
+              <div className="text-2xl sm:text-3xl font-bold text-primary mb-1">85</div>
+              <p className="text-xs sm:text-sm text-muted-foreground">Countries</p>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary mb-1">4.9★</div>
-              <p className="text-muted-foreground text-sm">Average Rating</p>
+              <div className="text-2xl sm:text-3xl font-bold text-primary mb-1">4.9★</div>
+              <p className="text-xs sm:text-sm text-muted-foreground">Average Rating</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* What We Do Section */}
-      <section id="how" className="py-24 px-8 bg-card border-y border-border">
+      <section className="py-12 sm:py-16 lg:py-24 px-4 sm:px-6 lg:px-8 bg-card border-y border-border">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-balance">
+          <div className="text-center mb-12 lg:mb-16">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-balance">
               What We Do
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
               GoSports connects athletes with extraordinary sporting
               experiences. We empower participants to discover, register, and
               excel at events worldwide.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             <div className="group">
-              <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center mb-6 border border-primary/20 group-hover:bg-primary/20 transition">
-                <Zap className="text-primary" size={32} />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-primary/10 rounded-lg flex items-center justify-center mb-4 sm:mb-6 border border-primary/20 group-hover:bg-primary/20 transition">
+                <Zap className="text-primary" size={28} />
               </div>
-              <h3 className="text-2xl font-bold mb-3">Discover Events</h3>
-              <p className="text-muted-foreground">
+              <h3 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3">Discover Events</h3>
+              <p className="text-sm sm:text-base text-muted-foreground">
                 Browse thousands of sporting events from marathons to
                 championships. Filter by location, date, and sport type to find
                 your perfect match.
@@ -264,11 +242,11 @@ export default function Home() {
             </div>
 
             <div className="group">
-              <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center mb-6 border border-primary/20 group-hover:bg-primary/20 transition">
-                <Users className="text-primary" size={32} />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-primary/10 rounded-lg flex items-center justify-center mb-4 sm:mb-6 border border-primary/20 group-hover:bg-primary/20 transition">
+                <Users className="text-primary" size={28} />
               </div>
-              <h3 className="text-2xl font-bold mb-3">Connect & Compete</h3>
-              <p className="text-muted-foreground">
+              <h3 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3">Connect & Compete</h3>
+              <p className="text-sm sm:text-base text-muted-foreground">
                 Join a vibrant community of athletes from around the world.
                 Network, share experiences, and find training partners for your
                 next challenge.
@@ -276,11 +254,11 @@ export default function Home() {
             </div>
 
             <div className="group">
-              <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center mb-6 border border-primary/20 group-hover:bg-primary/20 transition">
-                <BarChart3 className="text-primary" size={32} />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-primary/10 rounded-lg flex items-center justify-center mb-4 sm:mb-6 border border-primary/20 group-hover:bg-primary/20 transition">
+                <BarChart3 className="text-primary" size={28} />
               </div>
-              <h3 className="text-2xl font-bold mb-3">Track Progress</h3>
-              <p className="text-muted-foreground">
+              <h3 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-3">Track Progress</h3>
+              <p className="text-sm sm:text-base text-muted-foreground">
                 Monitor your performance across events. Analyze stats, earn
                 achievements, and watch yourself improve with our comprehensive
                 analytics dashboard.
@@ -290,120 +268,265 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="events" className="py-24 px-8">
+      {/* Tab Navigation */}
+      <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-16">
-            <div>
-              <h2 className="text-4xl md:text-5xl font-bold mb-2 text-balance">
-                Upcoming Events
-              </h2>
-              <p className="text-muted-foreground">
-                Next 3 months of amazing sporting experiences
-              </p>
-            </div>
-            <Link
-              href="/events"
-              className="text-primary hover:text-primary/80 transition flex items-center gap-2 font-semibold whitespace-nowrap"
-            >
-              View All <ArrowRight size={20} />
-            </Link>
-          </div>
-
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
-              <p className="text-muted-foreground">Loading events...</p>
-            </div>
-          ) : error ? (
-            <div className="text-center py-12">
-              <p className="text-red-500 mb-4">{error}</p>
+          <div className="flex justify-center mb-8 sm:mb-12">
+            <div className="flex items-center bg-card border border-border rounded-lg p-1">
               <button
-                onClick={() => window.location.reload()}
-                className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:opacity-90 transition font-semibold text-sm"
+                onClick={() => setActiveTab("events")}
+                className={`px-4 sm:px-6 py-2 sm:py-3 rounded-md text-sm font-medium transition-all ${activeTab === "events"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
-                Try Again
+                Events
+              </button>
+              <button
+                onClick={() => setActiveTab("sports")}
+                className={`px-4 sm:px-6 py-2 sm:py-3 rounded-md text-sm font-medium transition-all ${activeTab === "sports"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
+              >
+                Sports
               </button>
             </div>
-          ) : futureEvents.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No upcoming events found.</p>
-              <p className="text-muted-foreground text-sm mt-2">
-                Check back soon for new events!
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="grid md:grid-cols-3 gap-8">
-                {futureEvents.slice(0, visibleEvents).map((event) => (
-                  <div
-                    key={event.id}
-                    className="bg-card rounded-xl overflow-hidden border border-border hover:border-primary transition group cursor-pointer"
-                  >
-                    <div className="relative h-64 overflow-hidden bg-muted">
-                      <img
-                        src={event.image || "/placeholder.svg"}
-                        alt={event.eventName}
-                        className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
-                      />
-                      <div className="absolute top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-semibold">
-                        {new Date(event.date).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </div>
-                      <div className="absolute top-4 left-4 bg-background/80 text-foreground px-3 py-1 rounded-full text-xs font-semibold">
-                        {new Date(event.date).toLocaleDateString('en-US', { month: 'short' })}
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      <h3 className="text-xl font-bold mb-3">{event.eventName}</h3>
-                      <div className="space-y-3 mb-6">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <MapPin size={16} />
-                          <span className="text-sm">{event.venue || "Location TBA"}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Calendar size={16} />
-                          <span className="text-sm">
-                            {new Date(event.date).toLocaleDateString('en-US', {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Users size={16} />
-                          <span className="text-sm">
-                            {event.ticketStatus?.maximumOccupancy || 'N/A'} participants
-                          </span>
-                        </div>
-                      </div>
-                      <Link
-                        href={`/events/${event.id}`}
-                        className="block"
-                      >
-                        <button className="w-full bg-primary text-primary-foreground py-2 rounded-lg hover:opacity-90 transition font-semibold text-sm">
-                          View Details
-                        </button>
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+          </div>
+
+          {/* Events Tab Content */}
+          {activeTab === "events" && (
+            <div>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 sm:mb-12">
+                <div>
+                  <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2 text-balance">
+                    Upcoming Events
+                  </h2>
+                  <p className="text-sm sm:text-base text-muted-foreground">
+                    Next 3 months of amazing sporting experiences
+                  </p>
+                </div>
+                <Link
+                  href="/events"
+                  className="text-primary hover:text-primary/80 transition flex items-center gap-2 font-semibold whitespace-nowrap"
+                >
+                  View All <ArrowRight size={20} />
+                </Link>
               </div>
 
-              {visibleEvents < futureEvents.length && (
-                <div className="text-center mt-12">
+              {loadingEvents ? (
+                <div className="text-center py-12">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+                  <p className="text-muted-foreground">Loading events...</p>
+                </div>
+              ) : errorEvents ? (
+                <div className="text-center py-12">
+                  <p className="text-red-500 mb-4">{errorEvents}</p>
                   <button
-                    onClick={() => setVisibleEvents(futureEvents.length)}
-                    className="bg-primary text-primary-foreground px-8 py-3 rounded-lg hover:opacity-90 transition font-semibold"
+                    onClick={() => window.location.reload()}
+                    className="bg-primary text-primary-foreground px-4 sm:px-6 py-2 rounded-lg hover:opacity-90 transition font-semibold text-sm"
                   >
-                    View All Events ({futureEvents.length})
+                    Try Again
                   </button>
                 </div>
+              ) : futureEvents.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">No upcoming events found.</p>
+                  <p className="text-muted-foreground text-sm mt-2">
+                    Check back soon for new events!
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+                    {futureEvents.slice(0, visibleEvents).map((event) => (
+                      <div
+                        key={event.id}
+                        className="bg-card rounded-xl overflow-hidden border border-border hover:border-primary transition group cursor-pointer"
+                      >
+                        <div className="relative h-48 sm:h-56 lg:h-64 overflow-hidden bg-muted">
+                          <img
+                            src={event.image || "/placeholder.svg"}
+                            alt={event.eventName}
+                            className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
+                          />
+                          <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">
+                            {new Date(event.date).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </div>
+                          <div className="absolute top-3 left-3 bg-background/80 text-foreground px-2 sm:px-3 py-1 rounded-full text-xs font-semibold">
+                            {new Date(event.date).toLocaleDateString('en-US', { month: 'short' })}
+                          </div>
+                        </div>
+                        <div className="p-4 sm:p-6">
+                          <h3 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3">{event.eventName}</h3>
+                          <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <MapPin size={16} />
+                              <span className="text-xs sm:text-sm">{event.venue || "Location TBA"}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Calendar size={16} />
+                              <span className="text-xs sm:text-sm">
+                                {new Date(event.date).toLocaleDateString('en-US', {
+                                  weekday: 'short',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric'
+                                })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Users size={16} />
+                              <span className="text-xs sm:text-sm">
+                                {event.ticketStatus?.maximumOccupancy || 'N/A'} participants
+                              </span>
+                            </div>
+                          </div>
+                          <Link
+                            href={`/events/${event.id}`}
+                            className="block"
+                          >
+                            <button className="w-full bg-primary text-primary-foreground py-2 sm:py-3 rounded-lg hover:opacity-90 transition font-semibold text-sm">
+                              View Details
+                            </button>
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {visibleEvents < futureEvents.length && (
+                    <div className="text-center mt-8 sm:mt-12">
+                      <button
+                        onClick={() => setVisibleEvents(futureEvents.length)}
+                        className="bg-primary text-primary-foreground px-6 sm:px-8 py-3 rounded-lg hover:opacity-90 transition font-semibold text-sm sm:text-base"
+                      >
+                        View All Events ({futureEvents.length})
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
-            </>
+            </div>
+          )}
+
+          {/* Sports Tab Content */}
+          {activeTab === "sports" && (
+            <div>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 sm:mb-12">
+                <div>
+                  <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2 text-balance">
+                    Available Sports
+                  </h2>
+                  <p className="text-sm sm:text-base text-muted-foreground">
+                    Discover various sports you can participate in
+                  </p>
+                </div>
+                <Link
+                  href="/sports"
+                  className="text-primary hover:text-primary/80 transition flex items-center gap-2 font-semibold whitespace-nowrap"
+                >
+                  View All <ArrowRight size={20} />
+                </Link>
+              </div>
+
+              {loadingSports ? (
+                <div className="text-center py-12">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+                  <p className="text-muted-foreground">Loading sports...</p>
+                </div>
+              ) : errorSports ? (
+                <div className="text-center py-12">
+                  <p className="text-red-500 mb-4">{errorSports}</p>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="bg-primary text-primary-foreground px-4 sm:px-6 py-2 rounded-lg hover:opacity-90 transition font-semibold text-sm"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              ) : sports.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">No sports found.</p>
+                  <p className="text-muted-foreground text-sm mt-2">
+                    Check back soon for available sports!
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+                    {sports.slice(0, visibleSports).map((sport) => (
+                      <div
+                        key={sport.id}
+                        className="bg-card rounded-xl overflow-hidden border border-border hover:border-primary transition group cursor-pointer"
+                      >
+                        <div className="relative h-48 sm:h-56 lg:h-64 overflow-hidden bg-muted">
+                          <img
+                            src={sport.image || "/placeholder.svg"}
+                            alt={sport.sportName}
+                            className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
+                          />
+                          <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold">
+                            {new Date(sport.date).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </div>
+                        </div>
+                        <div className="p-4 sm:p-6">
+                          <h3 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3">{sport.sportName}</h3>
+                          <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <MapPin size={16} className="flex-shrink-0" />
+                              <span className="text-xs sm:text-sm">{sport.venue}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Calendar size={16} className="flex-shrink-0" />
+                              <span className="text-xs sm:text-sm">
+                                {new Date(sport.date).toLocaleDateString('en-US', {
+                                  weekday: 'short',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric'
+                                })}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Users size={16} className="flex-shrink-0" />
+                              <span className="text-xs sm:text-sm">
+                                {sport.participationStatus?.maximumParticipants || 0} participants
+                              </span>
+                            </div>
+                          </div>
+                          <Link
+                            href={`/sports/${sport.id}`}
+                            className="block"
+                          >
+                            <button className="w-full bg-primary text-primary-foreground py-2 sm:py-3 rounded-lg hover:opacity-90 transition font-semibold text-sm">
+                              View Details
+                            </button>
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {visibleSports < sports.length && (
+                    <div className="text-center mt-8 sm:mt-12">
+                      <button
+                        onClick={() => setVisibleSports(sports.length)}
+                        className="bg-primary text-primary-foreground px-6 sm:px-8 py-3 rounded-lg hover:opacity-90 transition font-semibold text-sm sm:text-base"
+                      >
+                        View All Sports ({sports.length})
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           )}
         </div>
       </section>

@@ -21,7 +21,7 @@ export const getCategories = async () => {
   return response.data;
 };
 
-// Get categories by type
+// Get categories by type (event, sports)
 export const getCategoriesByType = async (type) => {
   const response = await axios.get(`${API_BASE_URL}/category/type/${type}`);
   return response.data;
