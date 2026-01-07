@@ -5,6 +5,7 @@ import { MapPin, Calendar, Users, Share2, Clock, Trophy, Plus, Minus, Mail, Phon
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { getEventById } from "../../api/event";
+import { Navbar } from "@/components/navbar";
 
 export default function EventDetailPage({ params }: { params: { id: string }; }) {
   const [quantity, setQuantity] = useState(1);
@@ -189,7 +190,7 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
   return (
     <main className="bg-background text-foreground">
       {/* Navigation */}
-      <Header />
+      <Navbar />
 
       {/* Breadcrumb */}
       <div className="px-8 py-4 border-b border-border flex items-center gap-2 text-sm text-muted-foreground">
