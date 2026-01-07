@@ -6,45 +6,58 @@ import Link from "next/link";
 import { MapPin, Calendar } from "lucide-react";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
-import { getEventById } from "../../../api/event";
+import { getSportById } from "../../../api/sports";
 import { createCheckout } from "@/app/api/stripe";
 import { Footer } from "@/components/footer";
+import { Navbar } from "@/components/navbar";
 
 export default function GetTicketsPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const [eventData, setEventData] = useState<any>(null);
-  const [eventId, setEventId] = useState<string | null>(null);
+  const [sportData, setSportData] = useState<any>(null);
+  const [sportId, setSportId] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const quantity = parseInt(searchParams.get("quantity") || "1");
   const [attendees, setAttendees] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchEventData = async () => {
+    const fetchSportData = async () => {
       const resolvedParams = await params;
-      const eventId = resolvedParams.id;
-      setEventId(eventId);
+      const id = resolvedParams.id;
+      setSportId(id);
     };
 
-    fetchEventData();
+    fetchSportData();
   }, [params]);
 
   useEffect(() => {
-    if (eventId) {
-      const fetchEventData = async () => {
+    if (sportId) {
+      const fetchSportData = async () => {
         try {
-          const data = await getEventById(eventId);
-          setEventData(data.event);
+          setLoading(true);
+          const data = await getSportById(sportId);
+          console.log("Sport data received:", data);
+
+          if (data && data.sport) {
+            setSportData(data.sport);
+          } else if (data) {
+            setSportData(data);
+          } else {
+            console.error("No sport data found");
+          }
         } catch (error) {
-          console.error("Error fetching event data:", error);
+          console.error("Error fetching sport data:", error);
+        } finally {
+          setLoading(false);
         }
       };
-      fetchEventData();
+      fetchSportData();
     }
-  }, [eventId]);
+  }, [sportId]);
 
   useEffect(() => {
-    if (quantity && !isNaN(quantity)) {
+    if (quantity && !isNaN(quantity) && sportData) {
       const initial = Array.from({ length: quantity }, () => ({
         name: "",
         idNumber: "",
@@ -54,9 +67,8 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
       }));
       setAttendees(initial);
     }
-  }, [quantity, eventData]);
+  }, [quantity, sportData]);
 
-  // State
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -77,9 +89,15 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
     field: string,
     value: string
   ) => {
-    if (field === "age" && parseInt(value) <= 0) {
-      alert("Age must be greater than 0");
-      return;
+    if (field === "age") {
+      const ageValue = parseInt(value);
+      if (ageValue < 0) {
+        alert("Age must be greater than 0");
+        return;
+      }
+      if (isNaN(ageValue)) {
+        value = "";
+      }
     }
 
     const updated = [...attendees];
@@ -90,8 +108,10 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
   const validateAttendees = () => {
     for (let i = 0; i < attendees.length; i++) {
       const attendee = attendees[i];
-      if (!attendee.name || !attendee.idNumber || parseInt(attendee.age) <= 0) {
-        alert(`Please fill in all required fields for Attendee ${i + 1} and ensure age is greater than 0`);
+      const age = parseInt(attendee.age);
+
+      if (!attendee.name.trim() || !attendee.idNumber.trim() || isNaN(age) || age <= 0) {
+        alert(`Please fill in all required fields for Attendee ${i + 1} and ensure age is a valid number greater than 0`);
         return false;
       }
     }
@@ -100,14 +120,14 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
 
   const saveRegistration = async () => {
     const registrationData = {
-      eventId: eventId,
-      eventName: eventData.eventName,
-      eventDate: eventData.date,
-      eventvenue: eventData.venue,
-      eventtime: eventData.time,
-      eventimage: eventData.image,
+      sportId: sportId,
+      sportName: sportData.sportName,
+      sportDate: sportData.date,
+      sportVenue: sportData.venue,
+      sportTime: sportData.time,
+      sportImage: sportData.image,
       quantity: quantity,
-      perTicketPrice: eventData.perTicketPrice,
+      perTicketPrice: sportData.registrationFee,
       totalAmount: total,
       status: "pending",
       billingInfo: {
@@ -123,10 +143,9 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
         gender: attendee.gender,
         email: attendee.attendeeEmail,
         teamName: form.teamName,
-
       })),
       paymentInfo: {
-        subtotal: eventData.perTicketPrice * quantity,
+        subtotal: sportData.registrationFee * quantity,
         total: total,
         status: "pending",
       },
@@ -134,21 +153,17 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
     };
 
     try {
-      // Generate a unique registration ID
-      const registrationId = `${Date.now()}-${Math.random()
+      const registrationId = `sport-reg-${Date.now()}-${Math.random()
         .toString(36)
         .substr(2, 9)}`;
 
-      // Save to localStorage
       const newRegistration = {
         id: registrationId,
         ...registrationData,
       };
 
       localStorage.setItem("currentRegistration", JSON.stringify(newRegistration));
-
-      console.log("Registration saved with ID:", registrationId);
-      console.log("Attendees saved:", registrationData.attendeeInfo);
+      console.log("Registration saved:", newRegistration);
       return registrationId;
     } catch (error) {
       console.error("Error saving registration:", error);
@@ -158,12 +173,12 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
 
   const handleProceedToPayment = async () => {
     if (
-      !form.firstName ||
-      !form.lastName ||
-      !form.email ||
-      !form.phone ||
+      !form.firstName.trim() ||
+      !form.lastName.trim() ||
+      !form.email.trim() ||
+      !form.phone.trim() ||
       !form.agree ||
-      !form.teamName
+      !form.teamName.trim()
     ) {
       alert("Please fill in all required billing fields.");
       return;
@@ -176,65 +191,72 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
     setIsSubmitting(true);
 
     try {
-      // Save registration locally
       const registrationId = await saveRegistration();
 
       const checkoutData = {
-        eventId: eventId,
-        eventName: eventData.eventName,
+        sportId: sportId,
+        sportName: sportData.sportName,
         quantity: quantity,
-        totalAmount: eventData.perTicketPrice,
+        totalAmount: total,
         participantId: registrationId,
       };
 
+      console.log("Checkout data:", checkoutData);
+
       const res = await createCheckout(checkoutData);
 
-      // Call Stripe backend
       if (res.data?.session?.url) {
         window.location.href = res.data.session.url;
       } else {
-        alert("Payment session failed");
+        alert("Payment session failed. Please try again.");
       }
     } catch (err) {
-      console.error(err);
-      alert("Error connecting to payment gateway");
+      console.error("Payment error:", err);
+      alert("Error connecting to payment gateway. Please check your internet connection and try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const event = {
-    title: "Fun Run Larian Perpaduan Malaysia Madani",
-    date: "October 13, 2025, 9:00 am",
-    location: "Sunway Ipoh, Malaysia",
-    ticketQty: 2,
-    ticketPrice: 100,
-  };
-
-  if (!eventData) {
+  if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading event...</p>
+          <p className="text-muted-foreground">Loading sport details...</p>
         </div>
       </div>
     );
   }
 
-  const total = quantity * eventData.perTicketPrice;
+  if (!sportData) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">Failed to load sport data</p>
+          <Link href="/sports">
+            <button className="bg-primary text-primary-foreground px-4 py-2 rounded-lg">
+              Back to Sports
+            </button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const total = quantity * (sportData.registrationFee || 0);
 
   return (
     <main className="bg-background text-foreground">
-      <Header />
+      <Navbar />
 
       {/* Breadcrumb */}
       <div className="px-8 py-4 border-b border-border text-sm text-muted-foreground flex items-center gap-2">
-        <Link href="/events" className="hover:text-primary transition">
-          Events
+        <Link href="/sports" className="hover:text-primary transition">
+          Sports
         </Link>
         <span>/</span>
-        <span>Event Registration</span>
+        <span>Sport Registration</span>
       </div>
 
       {/* Form Section */}
@@ -304,7 +326,7 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
             {/* Attendee Info */}
             <div>
               <h2 className="text-xl font-bold mb-4">
-                Attendees Information (Total: {quantity})
+                Participants Information (Total: {quantity})
               </h2>
 
               {attendees.map((att, index) => (
@@ -312,11 +334,11 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
                   key={index}
                   className="mb-6 border border-border rounded-lg p-4"
                 >
-                  <h4 className="font-semibold mb-3">Attendee {index + 1}</h4>
+                  <h4 className="font-semibold mb-3">Participant {index + 1}</h4>
 
                   <div className="grid md:grid-cols-2 gap-4">
                     <input
-                      placeholder="Name *"
+                      placeholder="Full Name *"
                       value={att.name}
                       onChange={(e) =>
                         handleAttendeeChange(index, "name", e.target.value)
@@ -336,13 +358,15 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
                     />
 
                     <input
-                      placeholder="Age"
+                      placeholder="Age *"
                       value={att.age}
                       type="number"
+                      min="1"
                       onChange={(e) =>
                         handleAttendeeChange(index, "age", e.target.value)
                       }
                       className="border border-border rounded-md px-4 py-2 bg-background"
+                      required
                     />
 
                     <select
@@ -351,8 +375,9 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
                         handleAttendeeChange(index, "gender", e.target.value)
                       }
                       className="border border-border rounded-md px-4 py-2 bg-background"
+                      required
                     >
-                      <option value="">Gender</option>
+                      <option value="">Select Gender *</option>
                       <option value="male">Male</option>
                       <option value="female">Female</option>
                       <option value="other">Other</option>
@@ -360,7 +385,7 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
 
                     <input
                       type="email"
-                      placeholder="Email Address"
+                      placeholder="Email Address (Optional)"
                       value={att.attendeeEmail}
                       onChange={(e) =>
                         handleAttendeeChange(
@@ -369,55 +394,8 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
                           e.target.value
                         )
                       }
-                      className="border border-border rounded-md px-4 py-2 bg-background"
+                      className="border border-border rounded-md px-4 py-2 bg-background col-span-2"
                     />
-
-                    {/* <select
-                      value={att.tshirtSize}
-                      onChange={(e) =>
-                        handleAttendeeChange(
-                          index,
-                          "tshirtSize",
-                          e.target.value
-                        )
-                      }
-                      className="border border-border rounded-md px-4 py-2 bg-background"
-                    >
-                      <option value="">Select T-shirt Size</option>
-                      {eventData?.availableTshirtSizes?.map((size: string) => (
-                        <option key={size} value={size}>
-                          {size}
-                        </option>
-                      ))}
-                    </select>
-
-                    <select
-                      value={att.raceCategory}
-                      onChange={(e) =>
-                        handleAttendeeChange(
-                          index,
-                          "raceCategory",
-                          e.target.value
-                        )
-                      }
-                      className="border border-border rounded-md px-4 py-2 bg-background"
-                    >
-                      <option value="">Select Race Category</option>
-                      {eventData?.raceCategories?.map((cat: string) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select> */}
-
-                    {/* <input
-                      placeholder="Team Name"
-                      value={att.teamName}
-                      onChange={(e) =>
-                        handleAttendeeChange(index, "teamName", e.target.value)
-                      }
-                      className="border border-border rounded-md px-4 py-2 bg-background"
-                    /> */}
                   </div>
                 </div>
               ))}
@@ -433,7 +411,7 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
                   required
                 />
                 <label className="text-sm text-muted-foreground">
-                  I agree to the event terms and waive all liabilities
+                  I agree to the sport event terms and waive all liabilities
                 </label>
               </div>
             </div>
@@ -442,42 +420,42 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
           {/* Right: Booking Summary */}
           <div className="bg-card border border-border rounded-xl p-8 space-y-6 h-fit sticky top-24">
             <div>
-              <h3 className="text-lg font-bold mb-1">{eventData.eventName}</h3>
+              <h3 className="text-lg font-bold mb-1">{sportData.sportName}</h3>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar size={14} />
                 <span>
-                  {new Date(eventData.date).toLocaleDateString()}{" "}
-                  {eventData.time}{" "}
+                  {new Date(sportData.date).toLocaleDateString()}{" "}
+                  {sportData.time}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                 <MapPin size={14} />
-                <span>{eventData.venue}</span>
+                <span>{sportData.venue}</span>
               </div>
             </div>
 
             <div className="border-t border-border pt-4 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span>
-                  {eventData.eventName} x {quantity}
+                  {sportData.sportName} x {quantity}
                 </span>
-                <span>${eventData.perTicketPrice * quantity}</span>
+                <span>${(sportData.registrationFee || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between font-semibold pt-2 border-t border-border">
                 <span>Total</span>
-                <span>${total}</span>
+                <span>${total.toFixed(2)}</span>
               </div>
             </div>
 
             <Button
               onClick={handleProceedToPayment}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !sportData}
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Saving...
+                  Processing...
                 </>
               ) : (
                 "Proceed To Payment"
@@ -486,7 +464,7 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
 
             {isSubmitting && (
               <p className="text-xs text-muted-foreground text-center">
-                Saving your registration details...
+                Processing your registration...
               </p>
             )}
           </div>

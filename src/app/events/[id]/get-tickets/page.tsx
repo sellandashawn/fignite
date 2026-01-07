@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { getEventById } from "../../../api/event";
 import { createCheckout } from "@/app/api/stripe";
 import { Footer } from "@/components/footer";
+import { Navbar } from "@/components/navbar";
 
 export default function GetTicketsPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -226,7 +227,7 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
 
   return (
     <main className="bg-background text-foreground">
-      <Header />
+      <Navbar />
 
       {/* Breadcrumb */}
       <div className="px-8 py-4 border-b border-border text-sm text-muted-foreground flex items-center gap-2">
