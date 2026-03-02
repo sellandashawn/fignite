@@ -181,18 +181,43 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
       const registrationId = await saveRegistration();
 
       const checkoutData = {
+        attendees: attendees.map((attendee) => ({
+          name: attendee.name,
+          idNumber: attendee.idNumber,
+          age: attendee.age,
+          gender: attendee.gender,
+          attendeeEmail: attendee.attendeeEmail,
+          teamName: form.teamName,
+        })),
+        totalAmount: total,
         eventId: eventId,
         eventName: eventData.eventName,
-        quantity: quantity,
-        totalAmount: eventData.perTicketPrice,
-        participantId: registrationId,
+        billingInfo: {
+          firstName: form.firstName,
+          lastName: form.lastName,
+          email: form.email,
+          phone: form.phone,
+        },
       };
 
       const res = await createCheckout(checkoutData);
 
-      // Call Stripe backend
-      if (res.data?.session?.url) {
-        window.location.href = res.data.session.url;
+      if (res.data?.action && res.data?.fields) {
+        const { action, fields } = res.data;
+        const formElement = document.createElement("form");
+        formElement.method = "POST";
+        formElement.action = action;
+
+        Object.entries(fields).forEach(([key, value]) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = String(value ?? "");
+          formElement.appendChild(input);
+        });
+
+        document.body.appendChild(formElement);
+        formElement.submit();
       } else {
         alert("Payment session failed");
       }

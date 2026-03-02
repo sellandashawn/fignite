@@ -11,7 +11,8 @@ import {
   Users,
 } from "lucide-react";
 import { getAllEvents } from "../../api/event";
-import { getPaymentsByEvent } from "../../api/payment";
+import { getAllSports } from "../../api/sports";
+import { getPaymentsByEvent, getPaymentsBySport } from "../../api/payment";
 import { getCategories } from "../../api/category";
 
 export default function EventPaymentDashboard() {
@@ -20,15 +21,17 @@ export default function EventPaymentDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
-  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [paymentPage, setPaymentPage] = useState(1);
   const [paymentsPerPage] = useState(5);
   const [events, setEvents] = useState([]);
+  const [sports, setSports] = useState([]);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [eventsLoading, setEventsLoading] = useState(false);
+  const [sportsLoading, setSportsLoading] = useState(false);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
 
   //     const [events, setEvents] = useState([
@@ -106,7 +109,7 @@ export default function EventPaymentDashboard() {
     // If it's a string, try to match by name
     if (typeof categoryIdentifier === "string") {
       const foundCategory = categories.find(
-        (cat) => cat.name === categoryIdentifier
+        (cat) => cat.name === categoryIdentifier,
       );
       if (foundCategory) return categoryIdentifier;
     }
@@ -121,7 +124,7 @@ export default function EventPaymentDashboard() {
       (cat) =>
         cat.id === categoryIdentifier ||
         cat._id === categoryIdentifier ||
-        cat.name === categoryIdentifier
+        cat.name === categoryIdentifier,
     );
 
     return category ? category.name : "General";
@@ -180,27 +183,55 @@ export default function EventPaymentDashboard() {
   }, []);
 
   useEffect(() => {
+    const fetchSports = async () => {
+      try {
+        setSportsLoading(true);
+        const response = await getAllSports();
+        const sportsData =
+          response.data?.sports || response.sports || response.data || [];
+        const sportsList = Array.isArray(sportsData) ? sportsData : [];
+        const updatedSports = sportsList.map((sport) => {
+          if (
+            !sport.status ||
+            (sport.status !== "cancelled" && sport.status !== "postponed")
+          ) {
+            const autoStatus = determineEventStatus(sport.date, sport.time);
+            return { ...sport, status: autoStatus };
+          }
+          return sport;
+        });
+        setSports(updatedSports);
+      } catch (err) {
+        console.error("Error fetching sports:", err);
+        setSports([]);
+      } finally {
+        setSportsLoading(false);
+      }
+    };
+    fetchSports();
+  }, []);
+
+  useEffect(() => {
     const fetchPayments = async () => {
-      if (!selectedEvent?.id) return;
+      if (!selectedItem?.id) return;
 
       try {
         setLoading(true);
-        const response = await getPaymentsByEvent(selectedEvent.id);
-        console.log("Payments response:", response);
+        const isEvent = selectedItem.type === "event";
+        const response = isEvent
+          ? await getPaymentsByEvent(selectedItem.id)
+          : await getPaymentsBySport(selectedItem.id);
+        const resData = response?.data || response;
 
         let paymentsData = [];
-
-        if (Array.isArray(response)) {
-          paymentsData = response;
-        } else if (Array.isArray(response.data)) {
-          paymentsData = response.data;
-        } else if (Array.isArray(response.payments)) {
-          paymentsData = response.payments;
-        } else if (response.data && Array.isArray(response.data.payments)) {
-          paymentsData = response.data.payments;
+        if (Array.isArray(resData)) {
+          paymentsData = resData;
+        } else if (Array.isArray(resData.payments)) {
+          paymentsData = resData.payments;
+        } else if (resData.data && Array.isArray(resData.data.payments)) {
+          paymentsData = resData.data.payments;
         }
 
-        console.log("Processed payments:", paymentsData);
         setPayments(paymentsData);
       } catch (err) {
         console.error("Error fetching payments:", err);
@@ -212,42 +243,52 @@ export default function EventPaymentDashboard() {
     };
 
     fetchPayments();
-  }, [selectedEvent]);
+  }, [selectedItem]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter, categoryFilter]);
 
-  const filteredEvents = Array.isArray(events)
-    ? events.filter((event) => {
-        if (!event) return false;
+  const eventsWithType = (Array.isArray(events) ? events : []).map((e) => ({
+    ...e,
+    type: "event",
+    id: e.id || e._id,
+    displayName: e.eventName || e.name,
+  }));
+  const sportsWithType = (Array.isArray(sports) ? sports : []).map((s) => ({
+    ...s,
+    type: "sport",
+    id: s.id || s._id,
+    displayName: s.sportName || s.name,
+  }));
+  const allItems = [...eventsWithType, ...sportsWithType];
 
-        const eventName = event.eventName;
-        const eventStatus = event.status || "";
-        const eventCategoryName = getCategoryName(event.category);
+  const filteredItems = allItems.filter((item) => {
+    if (!item) return false;
+    const name = item.displayName || item.eventName || item.sportName || "";
+    const itemStatus = item.status || "";
+    const categoryName = getCategoryName(item.category);
 
-        const matchesSearch = eventName
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase());
-        const matchesStatus =
-          statusFilter === "All Status" ||
-          eventStatus.toLowerCase() === statusFilter.toLowerCase();
-        const matchesCategory =
-          categoryFilter === "All Category" ||
-          eventCategoryName === categoryFilter;
+    const matchesSearch = name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchesStatus =
+      statusFilter === "All Status" ||
+      itemStatus.toLowerCase() === statusFilter.toLowerCase();
+    const matchesCategory =
+      categoryFilter === "All Category" || categoryName === categoryFilter;
 
-        return matchesSearch && matchesStatus && matchesCategory;
-      })
-    : [];
+    return matchesSearch && matchesStatus && matchesCategory;
+  });
 
-  const totalEvents = filteredEvents.length;
-  const totalPages = Math.ceil(totalEvents / itemsPerPage);
-  const currentPageEvents = filteredEvents.slice(
+  const totalItems = filteredItems.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const currentPageItems = filteredItems.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
-  const eventPayments = selectedEvent
+  const eventPayments = selectedItem
     ? Array.isArray(payments)
       ? payments
       : []
@@ -255,17 +296,17 @@ export default function EventPaymentDashboard() {
   const totalPayments = eventPayments.length;
   const totalPaymentAmount = eventPayments.reduce(
     (sum, payment) => sum + (payment.amount || 0),
-    0
+    0,
   );
   const totalTickets = eventPayments.reduce(
     (sum, payment) => sum + (payment.numberOfTickets || payment.quantity || 0),
-    0
+    0,
   );
 
   const totalPaymentPages = Math.ceil(totalPayments / paymentsPerPage);
   const currentPayments = eventPayments.slice(
     (paymentPage - 1) * paymentsPerPage,
-    paymentPage * paymentsPerPage
+    paymentPage * paymentsPerPage,
   );
 
   const handlePageChange = (page) => {
@@ -322,20 +363,24 @@ export default function EventPaymentDashboard() {
 
   const statusOptions = ["All Status", "Ongoing", "Upcoming", "Completed"];
 
-  if (eventsLoading || categoriesLoading) {
+  if (eventsLoading || sportsLoading || categoriesLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-slate-600">
-            {eventsLoading ? "Loading events..." : "Loading categories..."}
+            {eventsLoading
+              ? "Loading events..."
+              : sportsLoading
+                ? "Loading sports..."
+                : "Loading categories..."}
           </p>
         </div>
       </div>
     );
   }
 
-  if (selectedEvent) {
+  if (selectedItem) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
         <div className="max-w-7xl mx-auto">
@@ -343,14 +388,16 @@ export default function EventPaymentDashboard() {
           <div>
             <button
               onClick={() => {
-                setSelectedEvent(null);
+                setSelectedItem(null);
                 setPaymentPage(1);
                 setPayments([]);
               }}
               className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow"
             >
               <ArrowLeft size={20} className="text-slate-700" />
-              <span className="text-slate-700 font-medium">Back to Events</span>
+              <span className="text-slate-700 font-medium">
+                Back to Events & Sports
+              </span>
             </button>
           </div>
 
@@ -361,7 +408,10 @@ export default function EventPaymentDashboard() {
                   Payment Details
                 </h1>
                 <p className="text-slate-600 mt-2 text-lg font-bold">
-                  {selectedEvent.eventName || selectedEvent.name}
+                  {selectedItem.eventName ||
+                    selectedItem.sportName ||
+                    selectedItem.displayName ||
+                    selectedItem.name}
                 </p>
               </div>
             </div>
@@ -479,7 +529,7 @@ export default function EventPaymentDashboard() {
                           {formatDate(
                             payment.date ||
                               payment.createdAt ||
-                              payment.paymentDate
+                              payment.paymentDate,
                           )}
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-600 font-mono">
@@ -498,7 +548,7 @@ export default function EventPaymentDashboard() {
                       >
                         {loading
                           ? "Loading payments..."
-                          : "No payments found for this event"}
+                          : "No payments found for this event/sport"}
                       </td>
                     </tr>
                   )}
@@ -542,10 +592,10 @@ export default function EventPaymentDashboard() {
           <div className="flex justify-between items-center mb-4">
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-primary/90 to-primary/70 bg-clip-text text-transparent mb-2">
-                Event Payments
+                Event & Sport Payments
               </h1>
               <p className="text-slate-600">
-                Manage and view payment details for all events
+                Manage and view payment details for all events and sports
               </p>
             </div>
           </div>
@@ -561,7 +611,7 @@ export default function EventPaymentDashboard() {
               />
               <input
                 type="text"
-                placeholder="Search events..."
+                placeholder="Search events and sports..."
                 className="text-black w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/60"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -615,7 +665,10 @@ export default function EventPaymentDashboard() {
               <thead className="bg-primary/10">
                 <tr>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
-                    Event
+                    Type
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
+                    Name
                   </th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-slate-700">
                     Date
@@ -635,45 +688,58 @@ export default function EventPaymentDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {currentPageEvents.length > 0 ? (
-                  currentPageEvents.map((event) => (
+                {currentPageItems.length > 0 ? (
+                  currentPageItems.map((item) => (
                     <tr
-                      key={event.id || event._id}
+                      key={`${item.type}-${item.id}`}
                       className="hover:bg-slate-50 transition-colors"
                     >
+                      <td className="px-6 py-4">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            item.type === "sport"
+                              ? "bg-indigo-100 text-indigo-800"
+                              : "bg-sky-100 text-sky-800"
+                          }`}
+                        >
+                          {item.type === "sport" ? "Sport" : "Event"}
+                        </span>
+                      </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-primary/80 rounded-lg flex items-center justify-center">
                             <FileText size={20} className="text-white" />
                           </div>
                           <span className="text-sm font-medium text-slate-900">
-                            {event.eventName || event.name}
+                            {item.displayName ||
+                              item.eventName ||
+                              item.sportName ||
+                              item.name}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-600">
-                        {formatDate(event.date)}
+                        {formatDate(item.date)}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-600">
-                        {getCategoryName(event.category)}
+                        {getCategoryName(item.category)}
                       </td>
                       <td className="px-6 py-4">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
-                            event.status
+                            item.status,
                           )}`}
                         >
-                          {formatStatus(event.status)}
+                          {formatStatus(item.status)}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-600">
-                        {event.venue}
+                        {item.venue}
                       </td>
                       <td className="px-6 py-4">
                         <button
                           onClick={() => {
-                            setSelectedEvent(event);
-                            console.log("Selected event ID:", event.id);
+                            setSelectedItem(item);
                             setPaymentPage(1);
                           }}
                           className="flex items-center gap-2 px-3 py-2 bg-primary/90 text-white rounded-lg hover:bg-primary/80 transition-colors"
@@ -688,10 +754,10 @@ export default function EventPaymentDashboard() {
                 ) : (
                   <tr>
                     <td
-                      colSpan="6"
+                      colSpan="7"
                       className="px-6 py-4 text-center text-slate-600"
                     >
-                      No events found
+                      No events or sports found
                     </td>
                   </tr>
                 )}
@@ -701,7 +767,7 @@ export default function EventPaymentDashboard() {
         </div>
 
         {/* Pagination Controls */}
-        {filteredEvents.length > itemsPerPage && (
+        {filteredItems.length > itemsPerPage && (
           <div className="mt-6 flex justify-between items-center">
             <button
               onClick={() => handlePageChange(currentPage - 1)}
