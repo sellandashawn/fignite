@@ -1,11 +1,13 @@
 "use client"
 
+import { useState, useEffect } from "react";
 import { CountdownTimer } from "@/components/countdown-timer"
 import { EventCard } from "@/components/event-card"
 import { SearchFilters } from "@/components/search-filter"
 import { StatsSection } from "@/components/stats-section"
 import { ContactSection } from "@/components/contact-section"
 import { Calendar, MapPin, Users } from "lucide-react"
+import { getAllEvents } from "../app/api/event";
 
 const popularEvents = [
   {
@@ -28,58 +30,42 @@ const popularEvents = [
   },
 ]
 
-const upcomingEvents = [
-  {
-    title: "Summer Music Festival 2025",
-    date: "June 15, 2025",
-    location: "Central Park, NY",
-    attendees: 5000,
-    price: "$89",
-    image: "/music-festival-outdoor-stage-crowd-sunset.jpg",
-  },
-  {
-    title: "Tech Conference 2025",
-    date: "July 22, 2025",
-    location: "San Francisco, CA",
-    attendees: 2500,
-    price: "$299",
-    image: "/tech-conference-keynote-stage-modern-auditorium.jpg",
-  },
-  {
-    title: "Food & Wine Expo",
-    date: "August 10, 2025",
-    location: "Chicago, IL",
-    attendees: 3200,
-    price: "$125",
-    image: "/food-wine-expo-gourmet-dishes-elegant-setup.jpg",
-  },
-  {
-    title: "Art Gallery Opening",
-    date: "September 5, 2025",
-    location: "Boston, MA",
-    attendees: 800,
-    price: "Free",
-    image: "/art-gallery-modern-paintings-white-walls.jpg",
-  },
-  {
-    title: "Marathon Challenge",
-    date: "October 12, 2025",
-    location: "Seattle, WA",
-    attendees: 10000,
-    price: "$45",
-    image: "/marathon-runners-city-streets-sunrise.jpg",
-  },
-  {
-    title: "Jazz Night Live",
-    date: "November 18, 2025",
-    location: "New Orleans, LA",
-    attendees: 1500,
-    price: "$65",
-    image: "/jazz-concert-saxophone-stage-dim-lights.jpg",
-  },
-]
-
 export function EventsPage() {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const eventsResponse = await getAllEvents();
+
+        if (eventsResponse && eventsResponse.events) {
+          // Sort events by date to show upcoming events first
+          const sortedEvents = eventsResponse.events.sort((a, b) =>
+            new Date(a.date) - new Date(b.date)
+          );
+          setEvents(sortedEvents);
+        }
+
+      } catch (error) {
+        console.log("Error fetching events data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Get only upcoming events (assuming the API returns events with date field)
+  const upcomingEvents = events
+    .filter(event => new Date(event.date) > new Date()) // Only future events
+    .slice(0, 6); // Get first 6 upcoming events
+
+  console.log("Events Data:", events);
+
   return (
     <main>
       {/* Hero Section */}
@@ -138,21 +124,42 @@ export function EventsPage() {
       <section className="container mx-auto py-12">
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-3xl font-bold">Upcoming Events</h2>
-          <a href="#" className="text-primary hover:underline">
+          <a href="events" className="text-primary hover:underline">
             View All →
           </a>
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {upcomingEvents.map((event, index) => (
-            <EventCard key={index} {...event} />
-          ))}
-        </div>
+
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        ) : upcomingEvents.length > 0 ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {upcomingEvents.map((event, index) => (
+              <EventCard
+                key={index}
+                title={event.eventName || event.title}
+                date={`${new Date(event.date).toLocaleDateString()}${event.time ? ` at ${event.time}` : ''}`}
+                location={event.venue || event.location}
+                attendees={event.ticketStatus?.maximumOccupancy || "0"}
+                price={event.perTicketPrice ? `$${event.perTicketPrice}` : "0"}
+                image={event.image || "/default-event-image.jpg"}
+                category={event.category}
+                type="event"
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-lg text-muted-foreground">No upcoming events found.</p>
+          </div>
+        )}
       </section>
 
       {/* Stats Section */}
       <StatsSection
         stats={[
-          { value: "500+", label: "Events", icon: Calendar },
+          { value: `${events.length}+`, label: "Events", icon: Calendar },
           { value: "50K+", label: "Attendees", icon: Users },
           { value: "100+", label: "Venues", icon: MapPin },
         ]}

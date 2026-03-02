@@ -1,11 +1,13 @@
 "use client"
 
+import { useState, useEffect } from "react";
 import { CountdownTimer } from "@/components/countdown-timer"
 import { EventCard } from "@/components/event-card"
 import { SearchFilters } from "@/components/search-filter"
 import { StatsSection } from "@/components/stats-section"
 import { ContactSection } from "@/components/contact-section"
 import { Trophy, Users, Target } from "lucide-react"
+import { getAllSports } from "../app/api/sports";
 
 const popularSports = [
   {
@@ -28,58 +30,39 @@ const popularSports = [
   },
 ]
 
-const upcomingSports = [
-  {
-    title: "NBA Finals Game 7",
-    date: "June 20, 2025",
-    location: "Los Angeles, CA",
-    attendees: 20000,
-    price: "$350",
-    image: "/basketball-game-arena-packed-crowd-action-shot.jpg",
-  },
-  {
-    title: "Champions League Final",
-    date: "May 28, 2025",
-    location: "Munich, Germany",
-    attendees: 75000,
-    price: "$280",
-    image: "/soccer-stadium-champions-league-night-match.jpg",
-  },
-  {
-    title: "Super Bowl LX",
-    date: "February 8, 2026",
-    location: "Miami, FL",
-    attendees: 65000,
-    price: "$450",
-    image: "/american-football-super-bowl-stadium-aerial-view.jpg",
-  },
-  {
-    title: "Wimbledon Finals",
-    date: "July 12, 2025",
-    location: "London, UK",
-    attendees: 15000,
-    price: "$220",
-    image: "/wimbledon-tennis-match-grass-court-sunny-day.jpg",
-  },
-  {
-    title: "World Series Game 1",
-    date: "October 21, 2025",
-    location: "New York, NY",
-    attendees: 50000,
-    price: "$195",
-    image: "/baseball-world-series-stadium-night-game.jpg",
-  },
-  {
-    title: "UFC Championship",
-    date: "December 12, 2025",
-    location: "Las Vegas, NV",
-    attendees: 18000,
-    price: "$380",
-    image: "/ufc-octagon-championship-fight-arena-lights.jpg",
-  },
-]
-
 export function SportsPage() {
+  const [sports, setSports] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const sportsResponse = await getAllSports();
+
+        if (sportsResponse && sportsResponse.sports) {
+          const sortedSports = sportsResponse.sports.sort((a, b) =>
+            new Date(a.date) - new Date(b.date)
+          );
+          setSports(sortedSports);
+        }
+
+      } catch (error) {
+        console.log("Error fetching sports data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const upcomingSports = sports
+    .filter(sport => new Date(sport.date) > new Date())
+    .slice(0, 6);
+
+  console.log("Sports Data:", sports);
+
   return (
     <main>
       {/* Hero Section */}
@@ -138,21 +121,42 @@ export function SportsPage() {
       <section className="container mx-auto py-12">
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-3xl font-bold">Upcoming Matches</h2>
-          <a href="#" className="text-accent hover:underline">
+          <a href="/sports" className="text-accent hover:underline">
             View All →
           </a>
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {upcomingSports.map((event, index) => (
-            <EventCard key={index} {...event} type="sport" />
-          ))}
-        </div>
+
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+          </div>
+        ) : upcomingSports.length > 0 ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {upcomingSports.map((sport, index) => (
+              <EventCard
+                key={index}
+                title={sport.sportName}
+                date={`${new Date(sport.date).toLocaleDateString()} at ${sport.time}`}
+                location={sport.venue}
+                attendees={`${sport.participationStatus?.confirmedParticipants || 0} / ${sport.participationStatus?.maximumParticipants || 0}`}
+                price={`$${sport.registrationFee || "0"}`}
+                image={sport.image || "/default-sport-image.jpg"}
+                category={sport.category}
+                type="sport"
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-lg text-muted-foreground">No upcoming sports events found.</p>
+          </div>
+        )}
       </section>
 
       {/* Stats Section */}
       <StatsSection
         stats={[
-          { value: "200+", label: "Sports Events", icon: Trophy },
+          { value: `${sports.length}+`, label: "Sports Events", icon: Trophy },
           { value: "100K+", label: "Fans", icon: Users },
           { value: "50+", label: "Stadiums", icon: Target },
         ]}
