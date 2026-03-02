@@ -16,6 +16,7 @@ import { getAllSports } from "../api/sports";
 import { getCategoriesByType } from "../api/category";
 import { Navbar } from "@/components/navbar";
 
+
 export default function SportsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("upcoming");
