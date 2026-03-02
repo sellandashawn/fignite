@@ -8,6 +8,7 @@ import DashBoard from "../Admin/dashboard/page";
 import RegistrationsDetails from "../Admin/registration_details/page";
 import CategoryDetails from "../Admin/category_details/page";
 import Sportsdetails from "../Admin/sport_details/page";
+import QrScannerPage from "../Admin/qr_scanner/page";
 import { AuthContext } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 import { isAdminFromToken } from "../utils/tokenUtils";
@@ -50,6 +51,7 @@ export default function AdminMain() {
         {activeMenu === "dashboard" && <DashBoard />}
         {activeMenu === "registrationDetails" && <RegistrationsDetails />}
         {activeMenu === "sports" && <Sportsdetails />}
+        {activeMenu === "qrScanner" && <QrScannerPage />}
       </div>
     </div>
   );
