@@ -9,6 +9,7 @@ import {
   LogOut,
   Tags,
   Dumbbell,
+  QrCode,
 } from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
 
@@ -22,6 +23,7 @@ export default function Sidebar({ activeMenu, setActiveMenu }) {
     { id: "categoryDetails", label: "Category Details", icon: Tags },
     { id: "paymentDetails", label: "Payment Details", icon: CreditCard },
     { id: "registrationDetails", label: "Registration Details", icon: Users },
+    { id: "qrScanner", label: "QR Scanner", icon: QrCode },
   ];
 
   return (
