@@ -139,7 +139,7 @@ export function SportsPage() {
                 date={`${new Date(sport.date).toLocaleDateString()} at ${sport.time}`}
                 location={sport.venue}
                 attendees={`${sport.participationStatus?.confirmedParticipants || 0} / ${sport.participationStatus?.maximumParticipants || 0}`}
-                price={`$${sport.registrationFee || "0"}`}
+                price={`LKR ${sport.registrationFee || "0"}`}
                 image={sport.image || "/default-sport-image.jpg"}
                 category={sport.category}
                 type="sport"

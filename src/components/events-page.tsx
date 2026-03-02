@@ -142,7 +142,7 @@ export function EventsPage() {
                 date={`${new Date(event.date).toLocaleDateString()}${event.time ? ` at ${event.time}` : ''}`}
                 location={event.venue || event.location}
                 attendees={event.ticketStatus?.maximumOccupancy || "0"}
-                price={event.perTicketPrice ? `$${event.perTicketPrice}` : "0"}
+                price={event.perTicketPrice ? `LKR ${event.perTicketPrice}` : "0"}
                 image={event.image || "/default-event-image.jpg"}
                 category={event.category}
                 type="event"

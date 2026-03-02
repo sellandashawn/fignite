@@ -424,10 +424,10 @@ export default function PaymentSuccessPage() {
                       <div>
                         <p className="font-medium">{ticket.quantity} × {ticket.type}</p>
                         <p className="text-muted-foreground text-xs">
-                          ${ticket.price.toFixed(2)} per {isSport ? 'participant' : 'ticket'}
+                          Rs. {ticket.price.toFixed(2)} per {isSport ? 'participant' : 'ticket'}
                         </p>
                       </div>
-                      <p className="font-medium">${ticket.subtotal.toFixed(2)}</p>
+                      <p className="font-medium">Rs. {ticket.subtotal.toFixed(2)}</p>
                     </div>
                   ))}
                 </div>
@@ -436,11 +436,11 @@ export default function PaymentSuccessPage() {
                 <div className="border-t border-border pt-4 space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>${orderSummary.payment.amount.toFixed(2)}</span>
+                    <span>Rs. {orderSummary.payment.amount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-base font-bold border-t border-border pt-2">
                     <span>Total</span>
-                    <span>${orderSummary.payment.total.toFixed(2)}</span>
+                    <span>Rs. {orderSummary.payment.total.toFixed(2)}</span>
                   </div>
                 </div>
 

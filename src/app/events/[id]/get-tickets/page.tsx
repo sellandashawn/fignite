@@ -462,11 +462,11 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
                 <span>
                   {eventData.eventName} x {quantity}
                 </span>
-                <span>${eventData.perTicketPrice * quantity}</span>
+                <span>Rs. {eventData.perTicketPrice * quantity}</span>
               </div>
               <div className="flex justify-between font-semibold pt-2 border-t border-border">
                 <span>Total</span>
-                <span>${total}</span>
+                <span>Rs. {total}</span>
               </div>
             </div>
 

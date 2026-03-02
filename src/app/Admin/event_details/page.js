@@ -664,7 +664,7 @@ export default function EventDetails() {
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-600">
                             <div className="flex items-center gap-1">
-                              ${" "}
+                              LKR{" "}
                               {event.perTicketPrice ||
                                 event.perlicketPrice ||
                                 "0.00"}
@@ -899,10 +899,10 @@ export default function EventDetails() {
 
               {/* Ticket Price & Maximum Occupancy Row */}
               <div className="grid grid-cols-2 gap-6">
-                <div className="group">
-                  <label className="block text-sm font-semibold text-slate-700 mb-3">
-                    Ticket Price ($) *
-                  </label>
+              <div className="group">
+                <label className="block text-sm font-semibold text-slate-700 mb-3">
+                  Ticket Price (LKR) *
+                </label>
                   <div className="relative">
                     <Ticket
                       className="absolute left-3 top-3.5 text-slate-400"

@@ -237,7 +237,7 @@ export default function SportDetailPage({ params }: { params: { id: string }; })
                 <div className="space-y-2 sm:space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-sm sm:text-base text-muted-foreground">Price per Person</span>
-                    <span className="font-bold text-base sm:text-lg">$ {sportData.registrationFee || "0.00"}</span>
+                    <span className="font-bold text-base sm:text-lg">LKR {sportData.registrationFee || "0.00"}</span>
                   </div>
                   <div className="flex justify-between items-center text-xs sm:text-sm">
                     <span className="text-muted-foreground">Available Spots</span>
@@ -248,7 +248,7 @@ export default function SportDetailPage({ params }: { params: { id: string }; })
                       Sub Total
                     </span>
                     <span className="font-bold text-base sm:text-lg text-primary">
-                      $ {totalPrice}
+                      LKR {totalPrice}
                     </span>
                   </div>
                 </div>

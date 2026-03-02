@@ -320,7 +320,7 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Ticket Price</span>
-                    <span className="font-bold text-lg">$ {eventData.perTicketPrice}</span>
+                    <span className="font-bold text-lg">LKR {eventData.perTicketPrice}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Available</span>
@@ -331,7 +331,7 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
                       Sub Total
                     </span>
                     <span className="font-bold text-lg text-primary">
-                      $ {totalPrice}
+                      LKR {totalPrice}
                     </span>
                   </div>
                 </div>
