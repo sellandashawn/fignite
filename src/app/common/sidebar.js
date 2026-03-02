@@ -33,7 +33,7 @@ export default function Sidebar({ activeMenu, setActiveMenu }) {
           <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/30">
             <span className="text-white font-bold text-sm">GS</span>
           </div>
-          <span className="font-bold text-xl text-white">GoSports</span>
+          <span className="font-bold text-xl text-white">Ignite</span>
         </div>
         <p className="text-center text-slate-400 text-sm">Admin Portal</p>
       </div>

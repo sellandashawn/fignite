@@ -76,7 +76,7 @@ export default function GalleryPage() {
         {/* Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent flex items-end p-8">
           <h1 className="text-4xl md:text-5xl font-bold text-white drop-shadow-lg">
-            GoSports Gallery
+            Ignite Gallery
           </h1>
         </div>
 

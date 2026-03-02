@@ -392,8 +392,8 @@ export default function EventsPage() {
       <footer className="bg-card border-t border-border py-16 px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-12 mb-12">
-            <div>
-              <h4 className="font-bold mb-4">GoSports</h4>
+          <div>
+              <h4 className="font-bold mb-4">Ignite</h4>
               <p className="text-muted-foreground text-sm">
                 Connecting athletes and events worldwide
               </p>
@@ -445,7 +445,7 @@ export default function EventsPage() {
             </div>
           </div>
           <div className="border-t border-border pt-8 text-center text-muted-foreground text-sm">
-            <p>&copy; 2025 GoSports. All rights reserved.</p>
+            <p>&copy; 2025 Ignite. All rights reserved.</p>
           </div>
         </div>
       </footer>

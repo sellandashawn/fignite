@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { CountdownTimer } from "@/components/countdown-timer"
 import { EventCard } from "@/components/event-card"
 import { SearchFilters } from "@/components/search-filter"
@@ -136,17 +137,22 @@ export function EventsPage() {
         ) : upcomingEvents.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {upcomingEvents.map((event, index) => (
-              <EventCard
-                key={index}
-                title={event.eventName || event.title}
-                date={`${new Date(event.date).toLocaleDateString()}${event.time ? ` at ${event.time}` : ''}`}
-                location={event.venue || event.location}
-                attendees={event.ticketStatus?.maximumOccupancy || "0"}
-                price={event.perTicketPrice ? `LKR ${event.perTicketPrice}` : "0"}
-                image={event.image || "/default-event-image.jpg"}
-                category={event.category}
-                type="event"
-              />
+              <Link
+                key={event.id || index}
+                href={`/events/${event.id}`}
+                className="block"
+              >
+                <EventCard
+                  title={event.eventName || event.title}
+                  date={`${new Date(event.date).toLocaleDateString()}${event.time ? ` at ${event.time}` : ''}`}
+                  location={event.venue || event.location}
+                  attendees={event.ticketStatus?.maximumOccupancy || "0"}
+                  price={event.perTicketPrice ? `LKR ${event.perTicketPrice}` : "0"}
+                  image={event.image || "/default-event-image.jpg"}
+                  category={event.category}
+                  type="event"
+                />
+              </Link>
             ))}
           </div>
         ) : (

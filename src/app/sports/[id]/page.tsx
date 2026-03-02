@@ -397,8 +397,8 @@ export default function SportDetailPage({ params }: { params: { id: string }; })
       <footer className="bg-card border-t border-border py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 lg:gap-12 mb-8 sm:mb-12">
-            <div>
-              <h4 className="font-bold mb-2 sm:mb-4 text-sm sm:text-base">GoSports</h4>
+          <div>
+              <h4 className="font-bold mb-2 sm:mb-4 text-sm sm:text-base">Ignite</h4>
               <p className="text-xs sm:text-sm text-muted-foreground">
                 Connecting athletes and sports worldwide
               </p>
@@ -450,7 +450,7 @@ export default function SportDetailPage({ params }: { params: { id: string }; })
             </div>
           </div>
           <div className="border-t border-border pt-4 sm:pt-8 text-center text-muted-foreground text-xs sm:text-sm">
-            <p>&copy; 2025 GoSports. All rights reserved.</p>
+            <p>&copy; 2025 Ignite. All rights reserved.</p>
           </div>
         </div>
       </footer>

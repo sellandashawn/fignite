@@ -48,9 +48,9 @@ export default function AboutPage() {
       {/* About Section */}
       <section className="py-12 md:py-20 px-4 sm:px-6 lg:px-8 border-b border-border">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6 text-balance">About GoSports</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6 text-balance">About Ignite</h1>
           <p className="text-lg text-muted-foreground mb-6 leading-relaxed max-w-3xl">
-            GoSports delivers a dynamic sports event and tournament company based in Kuala Lumpur, Malaysia. We are
+            Ignite delivers a dynamic sports event and tournament company based in Kuala Lumpur, Malaysia. We are
             driving innovation in sports organization and competitive participation across the region.
           </p>
           <div className="grid md:grid-cols-2 gap-6 text-muted-foreground leading-relaxed">
