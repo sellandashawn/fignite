@@ -103,36 +103,41 @@ export default function PaymentSuccessPage() {
         billingLastName: registration.billingInfo.lastName || '',
         billingEmail: registration.billingInfo.email || '',
         billingPhone: registration.billingInfo.phone || '',
-        attendees: registration.attendeeInfo.map(attendee => ({
+        attendees: registration.attendeeInfo.map((attendee) => ({
           name: attendee.name || '',
           idNumber: attendee.idNumber || '',
           age: attendee.age || '',
-          gender: attendee.gender || '',
+          gender: ['male', 'female', 'other'].includes(String(attendee.gender || '').toLowerCase())
+            ? String(attendee.gender).toLowerCase()
+            : 'other',
           attendeeEmail: attendee.email || '',
           teamName: attendee.teamName || registration.teamName || '',
         })),
         teamName: registration.attendeeInfo[0]?.teamName || registration.teamName || '',
-        amount: registration.totalAmount,
-        numberOfTickets: registration.quantity,
+        amount: Number(registration.totalAmount),
+        numberOfTickets: Number(registration.quantity) || registration.attendeeInfo?.length || 1,
         paymentDate: new Date().toISOString(),
-        isSport: isSport,
-        sportId: registration.sportId,
-        eventId: registration.eventId
+        isSport: !!isSport,
+        sportId: registration.sportId || undefined,
+        eventId: registration.eventId || undefined,
       }
 
       console.log('Participant Data:', participantData)
 
-      const result = await registerParticipantWithPayment(entityId, participantData, isSport)
+      const result = await registerParticipantWithPayment(entityId, participantData)
       setRegistrationResult(result)
-
       console.log('Registration successful:', result)
-
       localStorage.removeItem('currentRegistration')
-
       sessionStorage.removeItem('stripe_checkout_data')
-
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing registration:', error)
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        'Registration failed. Please try again or contact support.'
+      setRegistrationResult({ error: message })
+      // Keep currentRegistration so user can retry
     } finally {
       setIsProcessing(false)
     }
@@ -165,6 +170,36 @@ export default function PaymentSuccessPage() {
           </Button>
         </div>
       </div>
+    )
+  }
+
+  if (registrationResult?.error) {
+    return (
+      <main className="bg-background text-foreground min-h-screen">
+        <Navbar />
+        <div className="flex justify-center items-center min-h-[60vh] px-4">
+          <div className="text-center max-w-md">
+            <div className="bg-destructive/10 text-destructive rounded-lg p-4 mb-4">
+              <p className="font-medium">Registration could not be completed</p>
+              <p className="text-sm mt-2 text-muted-foreground">{registrationResult.error}</p>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Your payment may have been successful. You can try again to confirm your tickets, or contact support with your order details.
+            </p>
+            <div className="flex gap-3 justify-center flex-wrap">
+              <Button onClick={() => { hasProcessed.current = false; processRegistration(); }}>
+                Try again
+              </Button>
+              <Button asChild variant="outline">
+                <Link href={registrationData.sportId ? "/sports" : "/events"}>
+                  Back to {registrationData.sportId ? "Sports" : "Events"}
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </main>
     )
   }
 

@@ -9,11 +9,11 @@ const getAuthToken = () => {
 export const registerParticipantWithPayment = async (eventId, data) =>
   axios.post(
     `${API_BASE_URL}/tickets/${eventId}/register-with-payment`,
-    { eventId, data },
+    { data },
     {
       headers: {
-        Authorization: `Bearer ${getAuthToken()}`,
         "Content-Type": "application/json",
+        ...(getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : {}),
       },
     }
   );

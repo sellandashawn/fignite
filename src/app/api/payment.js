@@ -13,6 +13,13 @@ export const getPaymentsByEvent = async (eventId) =>
         },
     });
 
+export const getPaymentsBySport = async (sportId) =>
+    axios.get(`${API_BASE_URL}/payment/sports/${sportId}/payments`, {
+        headers: {
+            Authorization: `Bearer ${getAuthToken()}`,
+        },
+    });
+
 export const getAllPayments = async () =>
     axios.get(`${API_BASE_URL}/payment/payments`, {
         headers: {
