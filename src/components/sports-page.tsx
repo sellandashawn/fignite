@@ -1,6 +1,7 @@
 "use client"
-
+ 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { CountdownTimer } from "@/components/countdown-timer"
 import { EventCard } from "@/components/event-card"
 import { SearchFilters } from "@/components/search-filter"
@@ -133,17 +134,22 @@ export function SportsPage() {
         ) : upcomingSports.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {upcomingSports.map((sport, index) => (
-              <EventCard
-                key={index}
-                title={sport.sportName}
-                date={`${new Date(sport.date).toLocaleDateString()} at ${sport.time}`}
-                location={sport.venue}
-                attendees={`${sport.participationStatus?.confirmedParticipants || 0} / ${sport.participationStatus?.maximumParticipants || 0}`}
-                price={`LKR ${sport.registrationFee || "0"}`}
-                image={sport.image || "/default-sport-image.jpg"}
-                category={sport.category}
-                type="sport"
-              />
+              <Link
+                key={sport.id || index}
+                href={`/sports/${sport.id}`}
+                className="block"
+              >
+                <EventCard
+                  title={sport.sportName}
+                  date={`${new Date(sport.date).toLocaleDateString()} at ${sport.time}`}
+                  location={sport.venue}
+                  attendees={`${sport.participationStatus?.confirmedParticipants || 0} / ${sport.participationStatus?.maximumParticipants || 0}`}
+                  price={`LKR ${sport.registrationFee || "0"}`}
+                  image={sport.image || "/default-sport-image.jpg"}
+                  category={sport.category}
+                  type="sport"
+                />
+              </Link>
             ))}
           </div>
         ) : (

@@ -13,7 +13,7 @@ export function Header() {
               <span className="text-white font-bold">GS</span>
             </div>
             <span className="font-bold text-lg hidden sm:inline">
-              GoSports
+              Ignite
             </span>
           </Link>
           <nav className="hidden md:flex gap-8 items-center">

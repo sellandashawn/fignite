@@ -54,7 +54,7 @@ export default function AdminLogin() {
                                 <span className="text-white font-bold">GS</span>
                             </div>
                             <span className="font-bold text-lg text-white hidden sm:inline">
-                                GoSports
+                                Ignite
                             </span>
                         </div>
                     </div>

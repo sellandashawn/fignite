@@ -9,7 +9,7 @@ export function Footer(){
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div>
-              <h4 className="font-bold mb-4">GoSports</h4>
+              <h4 className="font-bold mb-4">Ignite</h4>
               <p className="text-muted-foreground text-sm">
                 Connecting athletes and events worldwide
               </p>
@@ -76,7 +76,7 @@ export function Footer(){
             </div>
           </div>
           <div className="border-t border-border pt-8 flex justify-between items-center text-muted-foreground text-sm">
-            <p>&copy; 2025 GoSports. All rights reserved.</p>
+            <p>&copy; 2025 Ignite. All rights reserved.</p>
             <div className="flex gap-6">
               <a href="#" className="hover:text-primary transition">
                 Twitter
