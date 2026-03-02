@@ -63,8 +63,6 @@ export default function SportsDetails() {
     { value: "upcoming", label: "Upcoming" },
     { value: "ongoing", label: "Ongoing" },
     { value: "completed", label: "Completed" },
-    { value: "cancelled", label: "Cancelled" },
-    { value: "postponed", label: "Postponed" },
   ];
 
   const determineSportStatus = (sportDate, sportTime) => {
@@ -108,7 +106,7 @@ export default function SportsDetails() {
 
     if (typeof categoryIdentifier === "string") {
       const foundCategory = categories.find(
-        (cat) => cat.name === categoryIdentifier
+        (cat) => cat.name === categoryIdentifier,
       );
       if (foundCategory) return categoryIdentifier;
     }
@@ -121,7 +119,7 @@ export default function SportsDetails() {
       (cat) =>
         cat.id === categoryIdentifier ||
         cat._id === categoryIdentifier ||
-        cat.name === categoryIdentifier
+        cat.name === categoryIdentifier,
     );
 
     return category ? category.name : "N/A";
@@ -282,11 +280,11 @@ export default function SportsDetails() {
     }
 
     const invalidScheduleItems = formData.schedule.some(
-      (item) => !item.time || !item.activity
+      (item) => !item.time || !item.activity,
     );
     if (invalidScheduleItems) {
       setError(
-        "Please fill out both time and activity for all schedule items or remove empty ones."
+        "Please fill out both time and activity for all schedule items or remove empty ones.",
       );
       return;
     }
@@ -398,10 +396,6 @@ export default function SportsDetails() {
         return "bg-yellow-100 text-yellow-800";
       case "completed":
         return "bg-blue-100 text-blue-800";
-      case "cancelled":
-        return "bg-red-100 text-red-800";
-      case "postponed":
-        return "bg-orange-100 text-orange-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -436,7 +430,7 @@ export default function SportsDetails() {
   const totalPages = Math.ceil(filteredSports.length / itemsPerPage);
   const currentPageSports = filteredSports.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   const handlePageChange = (page) => {
@@ -619,7 +613,7 @@ export default function SportsDetails() {
                           <td className="px-6 py-4">
                             <span
                               className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
-                                sport.status
+                                sport.status,
                               )}`}
                             >
                               {formatStatus(sport.status)}
@@ -857,7 +851,7 @@ export default function SportsDetails() {
               <div className="grid grid-cols-2 gap-6">
                 <div className="group">
                   <label className="block text-sm font-semibold text-slate-700 mb-3">
-                    Registration Fee ($) *
+                    Registration Fee (LKR) *
                   </label>
                   <div className="relative">
                     <FileText
@@ -1041,8 +1035,8 @@ export default function SportsDetails() {
                   {isLoading
                     ? "Processing..."
                     : sportToEdit
-                    ? "Update Sport"
-                    : "Create Sport"}
+                      ? "Update Sport"
+                      : "Create Sport"}
                 </button>
                 <button
                   type="button"

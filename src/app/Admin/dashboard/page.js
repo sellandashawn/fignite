@@ -1041,9 +1041,9 @@ export default function DashBoard() {
   };
 
   const paymentReports = [
-    { date: "25/11/2025", amount: "$10,000", status: "Completed" },
-    { date: "25/10/2025", amount: "$8,000", status: "Pending" },
-    { date: "25/01/2026", amount: "$5,000", status: "Completed" },
+    { date: "25/11/2025", amount: "LKR 10,000", status: "Completed" },
+    { date: "25/10/2025", amount: "LKR 8,000", status: "Pending" },
+    { date: "25/01/2026", amount: "LKR 5,000", status: "Completed" },
   ];
 
   // Default empty data for charts when no event is selected

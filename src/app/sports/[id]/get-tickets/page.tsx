@@ -434,18 +434,18 @@ export default function GetTicketsPage({ params }: { params: { id: string } }) {
               </div>
             </div>
 
-            <div className="border-t border-border pt-4 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>
-                  {sportData.sportName} x {quantity}
-                </span>
-                <span>${(sportData.registrationFee || 0).toFixed(2)}</span>
+              <div className="border-t border-border pt-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>
+                    {sportData.sportName} x {quantity}
+                  </span>
+                  <span>Rs. {(sportData.registrationFee || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-semibold pt-2 border-t border-border">
+                  <span>Total</span>
+                  <span>Rs. {total.toFixed(2)}</span>
+                </div>
               </div>
-              <div className="flex justify-between font-semibold pt-2 border-t border-border">
-                <span>Total</span>
-                <span>${total.toFixed(2)}</span>
-              </div>
-            </div>
 
             <Button
               onClick={handleProceedToPayment}
