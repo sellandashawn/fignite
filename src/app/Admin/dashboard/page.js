@@ -39,6 +39,7 @@ import { getAllPayments, getPaymentsByEvent } from "../../api/payment";
 import { getAllEvents, getEventById } from "../../api/event";
 import { getEventParticipants } from "../../api/participant";
 import { getCategories } from "../../api/category";
+import { getAllSports } from "../../api/sports";
 
 const attendeeEngagement = [
   { name: "Day 1", engagement: 100 },
@@ -199,6 +200,67 @@ const filterEvents = (events, filters, categories = []) => {
   });
 };
 
+// Filter sports based on criteria
+const filterSports = (sports, filters, categories = []) => {
+  return sports.filter((sport) => {
+    // Filter by search term
+    if (
+      filters.searchTerm &&
+      !sport.sportName
+        ?.toLowerCase()
+        .includes(filters.searchTerm.toLowerCase())
+    ) {
+      return false;
+    }
+
+    // Filter by sport category
+    if (filters.category) {
+      const sportCategoryName = getCategoryName(sport.category, categories);
+      if (sportCategoryName !== filters.category) {
+        return false;
+      }
+    }
+
+    // Filter by date range
+    const sportDate = new Date(sport.date);
+
+    if (filters.dateFrom) {
+      const fromDate = new Date(filters.dateFrom);
+      if (sportDate < fromDate) return false;
+    }
+
+    if (filters.dateTo) {
+      const toDate = new Date(filters.dateTo);
+      toDate.setHours(23, 59, 59, 999); // End of the day
+      if (sportDate > toDate) return false;
+    }
+
+    // Filter by month
+    if (filters.month) {
+      const filterDate = new Date(filters.month);
+      const sportYear = sportDate.getFullYear();
+      const sportMonth = sportDate.getMonth();
+      const filterYear = filterDate.getFullYear();
+      const filterMonth = filterDate.getMonth();
+
+      if (sportYear !== filterYear || sportMonth !== filterMonth) {
+        return false;
+      }
+    }
+
+    // Filter by status
+    if (filters.status) {
+      const sportStatus = sport.status?.toLowerCase();
+      const filterStatus = filters.status.toLowerCase();
+      if (sportStatus !== filterStatus) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+};
+
 // Filter payments based on criteria
 const filterPayments = (payments, filters) => {
   return payments.filter((payment) => {
@@ -235,8 +297,12 @@ const filterPayments = (payments, filters) => {
   });
 };
 
-// Calculate aggregated stats from filtered events
-const calculateAggregatedStats = (filteredEvents, filteredPayments) => {
+// Calculate aggregated stats from filtered events and sports
+const calculateAggregatedStats = (
+  filteredEvents,
+  filteredPayments,
+  filteredSports = []
+) => {
   let totalMaximumOccupancy = 0;
   let totalPlayers = 0;
   let totalUnscannedTickets = 0;
@@ -248,6 +314,14 @@ const calculateAggregatedStats = (filteredEvents, filteredPayments) => {
     totalPlayers += event.ticketStatus?.totalNumberOfPlayers || 0;
     totalUnscannedTickets += event.ticketStatus?.unscannedTickets || 0;
     totalSuccessfulPayments += event.ticketStatus?.successfulPayment || 0;
+  });
+
+  // Calculate from sports (map participationStatus to event-style fields)
+  filteredSports.forEach((sport) => {
+    totalMaximumOccupancy +=
+      sport.participationStatus?.maximumParticipants || 0;
+    totalPlayers += sport.participationStatus?.confirmedParticipants || 0;
+    // Sports currently don't track unscanned tickets or successful payment
   });
 
   // Also count from payments if available
@@ -269,8 +343,12 @@ const calculateAggregatedStats = (filteredEvents, filteredPayments) => {
   };
 };
 
-// Generate aggregate chart data based on filtered events
-const generateAggregateChartData = (filteredEvents, allParticipants) => {
+// Generate aggregate chart data based on filtered events and sports
+const generateAggregateChartData = (
+  filteredEvents,
+  allParticipants,
+  filteredSports = []
+) => {
   const months = [
     "Jan",
     "Feb",
@@ -295,7 +373,7 @@ const generateAggregateChartData = (filteredEvents, allParticipants) => {
     revenue: 0,
   }));
 
-  // Process all participants for aggregate data
+  // Process all participants for aggregate data (events)
   allParticipants.forEach((participant) => {
     const date = new Date(participant.createdAt);
     const monthIndex = date.getMonth();
@@ -326,17 +404,43 @@ const generateAggregateChartData = (filteredEvents, allParticipants) => {
     }
   });
 
+  // Add sports into chart data using their participationStatus and date
+  filteredSports.forEach((sport) => {
+    if (!sport.date) return;
+    const date = new Date(sport.date);
+    const monthIndex = date.getMonth();
+    const monthName = months[monthIndex];
+
+    const monthData = chartData.find((m) => m.name === monthName);
+    if (monthData) {
+      const confirmed =
+        sport.participationStatus?.confirmedParticipants || 0;
+      monthData.registrations += confirmed;
+      monthData.sales += confirmed;
+      // Engagement and revenue aren't currently tracked for sports
+    }
+  });
+
   return chartData;
 };
 
-// Generate aggregate participation rate
-const generateAggregateParticipationRate = (filteredEvents) => {
+// Generate aggregate participation rate (events + sports)
+const generateAggregateParticipationRate = (
+  filteredEvents,
+  filteredSports = []
+) => {
   let totalMaximumOccupancy = 0;
   let totalPlayers = 0;
 
   filteredEvents.forEach((event) => {
     totalMaximumOccupancy += event.ticketStatus?.maximumOccupancy || 0;
     totalPlayers += event.ticketStatus?.totalNumberOfPlayers || 0;
+  });
+
+  filteredSports.forEach((sport) => {
+    totalMaximumOccupancy +=
+      sport.participationStatus?.maximumParticipants || 0;
+    totalPlayers += sport.participationStatus?.confirmedParticipants || 0;
   });
 
   const participationRate = calculateParticipationRate(
@@ -353,12 +457,15 @@ const generateAggregateParticipationRate = (filteredEvents) => {
 export default function DashBoard() {
   const [payments, setPayments] = useState([]);
   const [events, setEvents] = useState([]);
+  const [sports, setSports] = useState([]);
   const [categories, setCategories] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
+  const [filteredSports, setFilteredSports] = useState([]);
   const [filteredPayments, setFilteredPayments] = useState([]);
   const [eventid, setEventId] = useState("");
   const [eventdata, setEventData] = useState("");
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [selectedSport, setSelectedSport] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [userdata, setUserData] = useState([]);
   const [allParticipants, setAllParticipants] = useState([]);
@@ -369,6 +476,7 @@ export default function DashBoard() {
   const [aggregatedStats, setAggregatedStats] = useState(null);
   const [dynamicChartData, setDynamicChartData] = useState([]);
   const [showAggregateView, setShowAggregateView] = useState(true);
+  const [listFilter, setListFilter] = useState("all"); // all | events | sports
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -391,6 +499,19 @@ export default function DashBoard() {
     };
 
     fetchCategoriesData();
+  }, []);
+
+  useEffect(() => {
+    const fetchSports = async () => {
+      try {
+        const response = await getAllSports();
+        setSports(response.sports || []);
+      } catch (err) {
+        console.error("Error fetching sports:", err);
+      }
+    };
+
+    fetchSports();
   }, []);
 
   // Default stats when no event is selected
@@ -477,16 +598,26 @@ export default function DashBoard() {
   }, [events, filters, searchTerm, categories]);
 
   useEffect(() => {
+    const filtered = filterSports(
+      sports,
+      { ...filters, searchTerm },
+      categories
+    );
+    setFilteredSports(filtered);
+  }, [sports, filters, searchTerm, categories]);
+
+  useEffect(() => {
     const filtered = filterPayments(payments, filters);
     setFilteredPayments(filtered);
   }, [payments, filters]);
 
   // Calculate aggregated stats when filtered events or payments change
   useEffect(() => {
-    if (filteredEvents.length > 0) {
+    if (filteredEvents.length > 0 || filteredSports.length > 0) {
       const aggregated = calculateAggregatedStats(
         filteredEvents,
-        filteredPayments
+        filteredPayments,
+        filteredSports
       );
       setAggregatedStats(aggregated);
 
@@ -498,7 +629,7 @@ export default function DashBoard() {
       // Reset to default stats when no events match filters
       setStats(defaultStats);
     }
-  }, [filteredEvents, filteredPayments]);
+  }, [filteredEvents, filteredSports, filteredPayments]);
 
   // Fetch all participants for aggregate data
   useEffect(() => {
@@ -531,16 +662,20 @@ export default function DashBoard() {
   }, [events]);
 
   useEffect(() => {
-    if (showAggregateView && filteredEvents.length > 0) {
-      // Show aggregate data for all filtered events
+    if (
+      showAggregateView &&
+      (filteredEvents.length > 0 || filteredSports.length > 0)
+    ) {
+      // Show aggregate data for all filtered events and sports
       const aggregateChartData = generateAggregateChartData(
         filteredEvents,
-        allParticipants
+        allParticipants,
+        filteredSports
       );
       setDynamicChartData(aggregateChartData);
 
       const aggregateParticipationRate =
-        generateAggregateParticipationRate(filteredEvents);
+        generateAggregateParticipationRate(filteredEvents, filteredSports);
       setParticipationRate(aggregateParticipationRate);
     } else if (selectedEvent && userdata.length > 0) {
       const registrationByMonth = groupByMonth(userdata, "createdAt");
@@ -628,6 +763,67 @@ export default function DashBoard() {
         { name: "Participated", value: rate },
         { name: "Available", value: 100 - rate },
       ]);
+    } else if (selectedSport) {
+      // Build simple per-sport chart using its date and participationStatus
+      const sportChartData = [
+        { name: "Jan", registrations: 0, sales: 0, engagement: 0, revenue: 0 },
+        { name: "Feb", registrations: 0, sales: 0, engagement: 0, revenue: 0 },
+        { name: "Mar", registrations: 0, sales: 0, engagement: 0, revenue: 0 },
+        { name: "Apr", registrations: 0, sales: 0, engagement: 0, revenue: 0 },
+        { name: "May", registrations: 0, sales: 0, engagement: 0, revenue: 0 },
+        { name: "Jun", registrations: 0, sales: 0, engagement: 0, revenue: 0 },
+        { name: "Jul", registrations: 0, sales: 0, engagement: 0, revenue: 0 },
+        { name: "Aug", registrations: 0, sales: 0, engagement: 0, revenue: 0 },
+        { name: "Sep", registrations: 0, sales: 0, engagement: 0, revenue: 0 },
+        { name: "Oct", registrations: 0, sales: 0, engagement: 0, revenue: 0 },
+        { name: "Nov", registrations: 0, sales: 0, engagement: 0, revenue: 0 },
+        { name: "Dec", registrations: 0, sales: 0, engagement: 0, revenue: 0 },
+      ];
+
+      if (selectedSport.date) {
+        const eventMonth = new Date(selectedSport.date).getMonth();
+        const monthName = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ][eventMonth];
+
+        const idx = sportChartData.findIndex((m) => m.name === monthName);
+        if (idx !== -1) {
+          const confirmed =
+            selectedSport.participationStatus?.confirmedParticipants || 0;
+          const maxParticipants =
+            selectedSport.participationStatus?.maximumParticipants || 0;
+
+          sportChartData[idx].registrations = confirmed;
+          sportChartData[idx].sales = confirmed;
+          sportChartData[idx].engagement = calculateParticipationRate(
+            confirmed,
+            maxParticipants
+          );
+        }
+      }
+
+      setDynamicChartData(sportChartData);
+
+      const maxParticipants =
+        selectedSport.participationStatus?.maximumParticipants || 0;
+      const confirmed =
+        selectedSport.participationStatus?.confirmedParticipants || 0;
+      const rate = calculateParticipationRate(confirmed, maxParticipants);
+      setParticipationRate([
+        { name: "Participated", value: rate },
+        { name: "Available", value: 100 - rate },
+      ]);
     } else {
       setDynamicChartData([]);
       setParticipationRate([]);
@@ -635,7 +831,9 @@ export default function DashBoard() {
   }, [
     showAggregateView,
     filteredEvents,
+    filteredSports,
     selectedEvent,
+    selectedSport,
     userdata,
     allParticipants,
     payments,
@@ -735,12 +933,41 @@ export default function DashBoard() {
     fetchEvents();
   }, []);
 
-  const handleEventClick = (event) => {
-    setSelectedEvent(event);
-    setEventId(event.id);
+  const handleRowClick = (item) => {
     setShowAggregateView(false);
+    setAggregatedStats(null);
+    setUserData([]);
 
-    console.log("Selected event:", event);
+    if (item.type === "event") {
+      const event = item.original;
+      setSelectedEvent(event);
+      setSelectedSport(null);
+      setEventId(event.id);
+      console.log("Selected event:", event);
+    } else if (item.type === "sport") {
+      const sport = item.original;
+      setSelectedEvent(null);
+      setSelectedSport(sport);
+
+      // Map sport participationStatus to ticket-style stats for cards
+      const fakeEventForStats = {
+        ticketStatus: {
+          maximumOccupancy:
+            sport.participationStatus?.maximumParticipants || 0,
+          totalNumberOfPlayers:
+            sport.participationStatus?.confirmedParticipants || 0,
+          unscannedTickets:
+            sport.participationStatus?.pendingRegistrations || 0,
+          successfulPayment:
+            sport.participationStatus?.confirmedParticipants || 0,
+        },
+      };
+
+      const sportStats = getEventStats(fakeEventForStats, []);
+      setStats(sportStats);
+
+      console.log("Selected sport:", sport);
+    }
   };
 
   const handleSearchChange = (e) => {
@@ -751,8 +978,9 @@ export default function DashBoard() {
     setSearchTerm("");
   };
 
-  const clearSelectedEvent = () => {
+  const clearSelectedItem = () => {
     setSelectedEvent(null);
+    setSelectedSport(null);
     setUserData([]);
     setStats(defaultStats);
     setShowAggregateView(true);
@@ -797,9 +1025,11 @@ export default function DashBoard() {
 
     if (!newShowAggregateView) {
       setSelectedEvent(null);
+      setSelectedSport(null);
       setStats(defaultStats);
     } else {
       setSelectedEvent(null);
+      setSelectedSport(null);
 
       if (filteredEvents.length > 0 && aggregatedStats) {
         const newStats = getEventStats(null, [], aggregatedStats);
@@ -838,6 +1068,32 @@ export default function DashBoard() {
     { name: "Available", value: 100 },
   ];
 
+  // Combined list of events and sports for unified table
+  const combinedList = [
+    ...(listFilter === "all" || listFilter === "events"
+      ? filteredEvents.map((event) => ({
+          id: event.id || event._id,
+          type: "event",
+          name: event.eventName,
+          date: event.date,
+          category: event.category,
+          status: event.status,
+          original: event,
+        }))
+      : []),
+    ...(listFilter === "all" || listFilter === "sports"
+      ? filteredSports.map((sport) => ({
+          id: sport.id || sport._id,
+          type: "sport",
+          name: sport.sportName,
+          date: sport.date,
+          category: sport.category,
+          status: sport.status,
+          original: sport,
+        }))
+      : []),
+  ].sort((a, b) => new Date(a.date) - new Date(b.date));
+
   // Determine which chart data to use
   const chartDataToUse =
     dynamicChartData.length > 0 ? dynamicChartData : defaultChartData;
@@ -855,6 +1111,9 @@ export default function DashBoard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
       <div className="max-w-7xl mx-auto">
+      <h1 className="text-4xl font-bold bg-gradient-to-r from-primary/90 to-primary/70 bg-clip-text text-transparent mb-2">
+Dashboard
+                </h1>
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
           <div className="flex gap-4 items-center mb-6">
             <div className="flex-1 relative">
@@ -864,7 +1123,7 @@ export default function DashBoard() {
               />
               <input
                 type="text"
-                placeholder="Search events by name..."
+                placeholder="Search by name..."
                 value={searchTerm}
                 onChange={handleSearchChange}
                 className="text-black w-full pl-10 pr-10 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/60 focus:bg-white/50 transition-all"
@@ -1049,11 +1308,11 @@ export default function DashBoard() {
             </div>
           </div>
 
-          {/* Event List Section */}
+          {/* Events & Sports List Section */}
           <div className="pt-5">
             <div className="flex justify-between items-center mb-4">
               <h1 className="text-black font-bold text-2xl">
-                Events List
+                Events &amp; Sports List
                 {(filters.dateFrom ||
                   filters.dateTo ||
                   filters.month ||
@@ -1061,85 +1320,147 @@ export default function DashBoard() {
                   filters.status ||
                   searchTerm) && (
                   <span className="text-sm font-normal text-slate-600 ml-2">
-                    ({filteredEvents.length} events found)
+                    ({combinedList.length} items found)
                   </span>
                 )}
               </h1>
-              {filteredEvents.length > 0 && (
-                <button
-                  onClick={toggleAggregateView}
-                  className={`flex items-center gap-2 px-4 py-2 font-semibold rounded-lg transition-all ${
-                    showAggregateView
-                      ? "bg-primary/90 text-white hover:shadow-lg hover:shadow-primary/30 hover:bg-primary/80"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  }`}
-                >
-                  <BarChartIcon size={16} />
-                  {showAggregateView ? "View Events" : "View Overall"}
-                </button>
-              )}
+              <div className="flex items-center gap-3">
+                <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setListFilter("all")}
+                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
+                      listFilter === "all"
+                        ? "bg-primary/90 text-white shadow-sm"
+                        : "text-slate-600 hover:bg-white"
+                    }`}
+                  >
+                    All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setListFilter("events")}
+                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
+                      listFilter === "events"
+                        ? "bg-primary/90 text-white shadow-sm"
+                        : "text-slate-600 hover:bg-white"
+                    }`}
+                  >
+                    Events
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setListFilter("sports")}
+                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
+                      listFilter === "sports"
+                        ? "bg-primary/90 text-white shadow-sm"
+                        : "text-slate-600 hover:bg-white"
+                    }`}
+                  >
+                    Sports
+                  </button>
+                </div>
+                {filteredEvents.length > 0 && (
+                  <button
+                    onClick={toggleAggregateView}
+                    className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
+                      showAggregateView
+                        ? "bg-primary/90 text-white hover:shadow-lg hover:shadow-primary/30 hover:bg-primary/80"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                  >
+                    <BarChartIcon size={14} />
+                    {showAggregateView
+                      ? listFilter === "sports"
+                        ? "View Sports"
+                        : listFilter === "events"
+                        ? "View Events"
+                        : "View All"
+                      : "View Overall"}
+                  </button>
+                )}
+              </div>
             </div>
             <div className="rounded-2xl border border-primary/20 overflow-hidden bg-slate-50">
               <div className="max-h-80 overflow-y-auto">
                 <table className="w-full text-left text-sm text-slate-800">
                   <thead className="bg-red-100 sticky top-0 z-10">
                     <tr>
-                      <th className="px-6 py-4">Event Name</th>
+                      <th className="px-6 py-4">Name</th>
+                      <th className="px-6 py-4">Type</th>
                       <th className="px-6 py-4">Date</th>
                       <th className="px-6 py-4">Category</th>
                       <th className="px-6 py-4">Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredEvents.length > 0 ? (
-                      filteredEvents.map((event, idx) => (
+                    {combinedList.length > 0 ? (
+                      combinedList.map((item, idx) => {
+                        const isEvent = item.type === "event";
+                        const isSport = item.type === "sport";
+                        const isSelected = isEvent
+                          ? selectedEvent?.id === item.id
+                          : isSport
+                          ? selectedSport?.id === item.id ||
+                            selectedSport?._id === item.id
+                          : false;
+
+                        return (
                         <tr
-                          key={event.id || idx}
-                          className={`border-t border-primary/10 cursor-pointer transition-all hover:bg-primary/5 hover:shadow-md ${
-                            selectedEvent?.id === event.id
+                          key={item.id || idx}
+                          className={`border-t border-primary/10 transition-all hover:bg-primary/5 hover:shadow-md ${
+                            isSelected
                               ? "bg-primary/20 ring-2 ring-primary/30 border-l-4 border-l-primary shadow-lg"
                               : "bg-white"
-                          } ${showAggregateView ? "opacity-50" : ""}`}
-                          onClick={() =>
-                            !showAggregateView && handleEventClick(event)
+                          } ${
+                            showAggregateView ? "opacity-50" : ""
+                          } cursor-pointer`}
+                          onClick={
+                            !showAggregateView
+                              ? () => handleRowClick(item)
+                              : undefined
                           }
                         >
                           <td className="px-6 py-4 font-medium">
-                            {selectedEvent?.id === event.id && (
+                            {isSelected && (
                               <span className="inline-block w-2 h-2 bg-primary rounded-full mr-2"></span>
                             )}
-                            {event.eventName}
-                            {selectedEvent?.id === event.id && (
+                            {item.name}
+                            {isEvent && isSelected && (
                               <span className="ml-2 text-xs text-primary font-semibold">
                                 SELECTED
                               </span>
                             )}
                           </td>
-                          <td className="px-6 py-4">
-                            {new Date(event.date).toLocaleDateString()}
+                          <td className="px-6 py-4 capitalize">
+                            {item.type}
                           </td>
                           <td className="px-6 py-4">
-                            {getCategoryName(event.category, categories)}
+                            {new Date(item.date).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4">
+                            {getCategoryName(item.category, categories)}
                           </td>
                           <td className="px-6 py-4">
                             <span
                               className={`px-4 py-1 rounded-full text-xs font-semibold ${getStatusClasses(
-                                event.status
+                                item.status
                               )}`}
                             >
-                              {event.status?.charAt(0).toUpperCase() +
-                                event.status?.slice(1)}
+                              {item.status?.charAt(0).toUpperCase() +
+                                item.status?.slice(1)}
                             </span>
                           </td>
                         </tr>
-                      ))
+                        );
+                      })
                     ) : (
                       <tr>
                         <td
-                          colSpan="4"
+                          colSpan="5"
                           className="px-6 py-8 text-center text-slate-500"
                         >
-                          No events found matching your filters
+                          No events or sports found matching your filters
                         </td>
                       </tr>
                     )}
@@ -1158,18 +1479,24 @@ export default function DashBoard() {
                   <span className="text-lg font-normal text-slate-600 ml-2">
                     - {selectedEvent.eventName}
                   </span>
-                ) : showAggregateView && filteredEvents.length > 0 ? (
+                ) : selectedSport ? (
                   <span className="text-lg font-normal text-slate-600 ml-2">
-                    - Aggregate of {filteredEvents.length} events
+                    - {selectedSport.sportName}
+                  </span>
+                ) : showAggregateView &&
+                  (filteredEvents.length > 0 || filteredSports.length > 0) ? (
+                  <span className="text-lg font-normal text-slate-600 ml-2">
+                    - Aggregate of {filteredEvents.length} events and{" "}
+                    {filteredSports.length} sports
                   </span>
                 ) : null}
               </h1>
-              {selectedEvent && (
+              {(selectedEvent || selectedSport) && (
                 <button
-                  onClick={clearSelectedEvent}
+                  onClick={clearSelectedItem}
                   className="text-sm text-slate-500 hover:text-slate-700 underline"
                 >
-                  Show All Events
+                  Show All
                 </button>
               )}
             </div>
@@ -1208,9 +1535,15 @@ export default function DashBoard() {
                   <span className="text-sm font-normal text-slate-600 ml-2">
                     - {selectedEvent.eventName}
                   </span>
-                ) : showAggregateView && filteredEvents.length > 0 ? (
+                ) : selectedSport ? (
                   <span className="text-sm font-normal text-slate-600 ml-2">
-                    - Aggregate of {filteredEvents.length} events
+                    - {selectedSport.sportName}
+                  </span>
+                ) : showAggregateView &&
+                  (filteredEvents.length > 0 || filteredSports.length > 0) ? (
+                  <span className="text-sm font-normal text-slate-600 ml-2">
+                    - Aggregate of {filteredEvents.length} events and{" "}
+                    {filteredSports.length} sports
                   </span>
                 ) : null}
               </h3>
@@ -1237,9 +1570,15 @@ export default function DashBoard() {
                   <span className="text-sm font-normal text-slate-600 ml-2">
                     - {selectedEvent.eventName}
                   </span>
-                ) : showAggregateView && filteredEvents.length > 0 ? (
+                ) : selectedSport ? (
                   <span className="text-sm font-normal text-slate-600 ml-2">
-                    - Aggregate of {filteredEvents.length} events
+                    - {selectedSport.sportName}
+                  </span>
+                ) : showAggregateView &&
+                  (filteredEvents.length > 0 || filteredSports.length > 0) ? (
+                  <span className="text-sm font-normal text-slate-600 ml-2">
+                    - Aggregate of {filteredEvents.length} events and{" "}
+                    {filteredSports.length} sports
                   </span>
                 ) : null}
               </h3>
@@ -1283,13 +1622,35 @@ export default function DashBoard() {
                     </p>
                   </div>
                 )}
-                {showAggregateView && filteredEvents.length > 0 && (
+                {selectedSport && (
+                  <div className="mt-2 text-center text-sm text-slate-600">
+                    <p>
+                      Maximum Participants:{" "}
+                      {selectedSport.participationStatus?.maximumParticipants ||
+                        0}
+                    </p>
+                    <p>
+                      Confirmed Participants:{" "}
+                      {selectedSport.participationStatus
+                        ?.confirmedParticipants || 0}
+                    </p>
+                    <p className="font-semibold">
+                      Participation Rate:{" "}
+                      {participationRateToUse[0]?.value || 0}%
+                    </p>
+                  </div>
+                )}
+                {showAggregateView &&
+                  (filteredEvents.length > 0 || filteredSports.length > 0) && (
                   <div className="mt-2 text-center text-sm text-slate-600">
                     <p>
                       Total Maximum Occupancy:{" "}
                       {aggregatedStats?.maximumOccupancy || 0}
                     </p>
-                    <p>Total Players: {aggregatedStats?.totalPlayers || 0}</p>
+                    <p>
+                      Total Players (Events &amp; Sports):{" "}
+                      {aggregatedStats?.totalPlayers || 0}
+                    </p>
                     <p className="font-semibold">
                       Aggregate Participation Rate:{" "}
                       {participationRateToUse[0]?.value || 0}%
@@ -1307,9 +1668,11 @@ export default function DashBoard() {
                   <span className="text-sm font-normal text-slate-600 ml-2">
                     - {selectedEvent.eventName}
                   </span>
-                ) : showAggregateView && filteredEvents.length > 0 ? (
+                ) : showAggregateView &&
+                  (filteredEvents.length > 0 || filteredSports.length > 0) ? (
                   <span className="text-sm font-normal text-slate-600 ml-2">
-                    - Aggregate of {filteredEvents.length} events
+                    - Aggregate of {filteredEvents.length} events and{" "}
+                    {filteredSports.length} sports
                   </span>
                 ) : null}
               </h3>
@@ -1353,103 +1716,7 @@ export default function DashBoard() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 space-y-8">
-          {/* Event Performance */}
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-slate-900 font-semibold">
-                Event Performance
-              </h2>
-              <span className="text-sm text-slate-600">
-                Showing {eventPerformance.length} events
-              </span>
-            </div>
-            <div className="rounded-2xl border border-primary/20 overflow-hidden bg-slate-50">
-              <table className="w-full text-left text-sm text-slate-800">
-                <thead className="bg-primary/10">
-                  <tr>
-                    <th className="px-6 py-4">Event</th>
-                    <th className="px-6 py-4">Ticket Sold</th>
-                    <th className="px-6 py-4">Amount</th>
-                    <th className="px-6 py-4">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {eventPerformance.length > 0 ? (
-                    eventPerformance.map((row, idx) => (
-                      <tr
-                        key={row.eventId || idx}
-                        className="border-t border-primary/10 bg-white"
-                      >
-                        <td className="px-6 py-4">{row.event}</td>
-                        <td className="px-6 py-4">{row.ticketSold}</td>
-                        <td className="px-6 py-4 font-medium text-slate-900">
-                          {row.amount}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`px-4 py-1 rounded-full text-xs font-semibold ${getStatusClasses(
-                              row.status
-                            )}`}
-                          >
-                            {row.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan="4"
-                        className="px-6 py-8 text-center text-slate-500"
-                      >
-                        No event performance data available
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Payment Reports */}
-          <div>
-            <h2 className="text-slate-900 font-semibold mb-3">
-              Payment Reports
-            </h2>
-            <div className="rounded-2xl border border-primary/20 overflow-hidden bg-slate-50">
-              <table className="w-full text-left text-sm text-slate-800">
-                <thead className="bg-primary/10">
-                  <tr>
-                    <th className="px-6 py-4">Date</th>
-                    <th className="px-6 py-4">Amount</th>
-                    <th className="px-6 py-4">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paymentReports.map((row, idx) => (
-                    <tr
-                      key={idx}
-                      className="border-t border-primary/10 bg-white"
-                    >
-                      <td className="px-6 py-4">{row.date}</td>
-                      <td className="px-6 py-4">{row.amount}</td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-4 py-1 rounded-full text-xs font-semibold ${getStatusClasses(
-                            row.status
-                          )}`}
-                        >
-                          {row.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+        
       </div>
     </div>
   );
