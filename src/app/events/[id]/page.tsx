@@ -7,7 +7,11 @@ import { Header } from "@/components/header";
 import { getEventById } from "../../api/event";
 import { Navbar } from "@/components/navbar";
 
-export default function EventDetailPage({ params }: { params: { id: string }; }) {
+export default function EventDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const [quantity, setQuantity] = useState(1);
   const [eventData, setEventData] = useState<any>(null);
   const [eventId, setEventId] = useState<string | null>(null);
@@ -95,8 +99,6 @@ export default function EventDetailPage({ params }: { params: { id: string }; })
       ],
     },
   }
-
-  const event = events[params.id] || events["1"]
 
   useEffect(() => {
     const fetchEventData = async () => {

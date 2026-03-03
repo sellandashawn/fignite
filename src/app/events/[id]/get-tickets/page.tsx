@@ -11,7 +11,11 @@ import { createCheckout } from "@/app/api/stripe";
 import { Footer } from "@/components/footer";
 import { Navbar } from "@/components/navbar";
 
-export default function GetTicketsPage({ params }: { params: { id: string } }) {
+export default function GetTicketsPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const router = useRouter();
   const [eventData, setEventData] = useState<any>(null);
   const [eventId, setEventId] = useState<string | null>(null);

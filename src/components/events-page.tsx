@@ -10,6 +10,20 @@ import { ContactSection } from "@/components/contact-section"
 import { Calendar, MapPin, Users } from "lucide-react"
 import { getAllEvents } from "../app/api/event";
 
+interface EventItem {
+  id?: string;
+  date?: string;
+  time?: string;
+  eventName?: string;
+  title?: string;
+  venue?: string;
+  location?: string;
+  image?: string;
+  category?: string;
+  perTicketPrice?: number;
+  ticketStatus?: { maximumOccupancy?: number };
+}
+
 const popularEvents = [
   {
     title: "DJ Carolina",
@@ -32,7 +46,7 @@ const popularEvents = [
 ]
 
 export function EventsPage() {
-  const [events, setEvents] = useState([]);
+  const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
 
@@ -44,8 +58,8 @@ export function EventsPage() {
 
         if (eventsResponse && eventsResponse.events) {
           // Sort events by date to show upcoming events first
-          const sortedEvents = eventsResponse.events.sort((a, b) =>
-            new Date(a.date) - new Date(b.date)
+          const sortedEvents = (eventsResponse.events as EventItem[]).sort((a, b) =>
+            new Date(a.date ?? 0).getTime() - new Date(b.date ?? 0).getTime()
           );
           setEvents(sortedEvents);
         }
@@ -62,7 +76,7 @@ export function EventsPage() {
 
   // Get only upcoming events (assuming the API returns events with date field)
   const upcomingEvents = events
-    .filter(event => new Date(event.date) > new Date()) // Only future events
+    .filter(event => event.date && new Date(event.date) > new Date()) // Only future events
     .slice(0, 6); // Get first 6 upcoming events
 
   console.log("Events Data:", events);
@@ -143,13 +157,14 @@ export function EventsPage() {
                 className="block"
               >
                 <EventCard
-                  title={event.eventName || event.title}
-                  date={`${new Date(event.date).toLocaleDateString()}${event.time ? ` at ${event.time}` : ''}`}
-                  location={event.venue || event.location}
-                  attendees={event.ticketStatus?.maximumOccupancy || "0"}
+                  title={(event.eventName || event.title) ?? ""}
+                  date={event.date
+                    ? `${new Date(event.date).toLocaleDateString()}${event.time ? ` at ${event.time}` : ""}`
+                    : "N/A"}
+                  location={(event.venue || event.location) ?? ""}
+                  attendees={event.ticketStatus?.maximumOccupancy ?? 0}
                   price={event.perTicketPrice ? `LKR ${event.perTicketPrice}` : "0"}
                   image={event.image || "/default-event-image.jpg"}
-                  category={event.category}
                   type="event"
                 />
               </Link>
