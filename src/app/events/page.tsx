@@ -15,15 +15,33 @@ import { getAllEvents } from "../api/event";
 import { getCategoriesByType } from "../api/category";
 import { Navbar } from "@/components/navbar";
 
+interface EventCategory {
+  id?: string | number;
+  _id?: string;
+  name: string;
+}
+
+interface EventItem {
+  id: string;
+  eventName?: string;
+  venue?: string;
+  category?: string | EventCategory | number;
+  date?: string;
+  createdAt?: string;
+  status?: string;
+  image?: string;
+  ticketStatus?: { maximumOccupancy?: number };
+  perTicketPrice?: number;
+}
 
 export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("upcoming");
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedSport, setSelectedSport] = useState("all");
-  const [events, setEvents] = useState([]);
+  const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState<EventCategory[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -121,7 +139,7 @@ export default function EventsPage() {
     },
   ];
 
-  const getCategoryName = (categoryIdentifier) => {
+  const getCategoryName = (categoryIdentifier: string | { name?: string } | number | null | undefined) => {
     if (!categoryIdentifier) return "N/A";
 
     if (typeof categoryIdentifier === "string") {
@@ -159,9 +177,9 @@ export default function EventsPage() {
     })
     .sort((a, b) => {
       if (sortBy === "upcoming") {
-        const now = new Date();
-        const aDate = new Date(a.date);
-        const bDate = new Date(b.date);
+        const now = Date.now();
+        const aDate = a.date ? new Date(a.date).getTime() : 0;
+        const bDate = b.date ? new Date(b.date).getTime() : 0;
 
         if (aDate >= now && bDate >= now) {
           return aDate - bDate;
@@ -171,7 +189,9 @@ export default function EventsPage() {
         return bDate - aDate;
       }
       if (sortBy === "newest") {
-        return new Date(b.createdAt) - new Date(a.createdAt);
+        const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bCreated - aCreated;
       }
       return 0;
     });
@@ -303,8 +323,9 @@ export default function EventsPage() {
                                   : "bg-primary text-primary-foreground"
                             }`}
                         >
-                          {event.status?.charAt(0).toUpperCase() +
-                            event.status?.slice(1) || "Upcoming"}
+                          {event.status
+                            ? event.status.charAt(0).toUpperCase() + event.status.slice(1)
+                            : "Upcoming"}
                         </div>
                         {(event.status === "cancelled" || event.status === "postponed") && (
                           <div className="absolute inset-0 bg-black opacity-50 flex items-center justify-center">
@@ -326,13 +347,15 @@ export default function EventsPage() {
                           <div className="flex items-center gap-2 text-muted-foreground text-sm">
                             <Calendar size={16} className="flex-shrink-0" />
                             <span>
-                              {new Date(event.date).toLocaleDateString()}
+                              {event.date
+                                ? new Date(event.date).toLocaleDateString()
+                                : "N/A"}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 text-muted-foreground text-sm">
                             <Users size={16} className="flex-shrink-0" />
                             <span>
-                              {event.ticketStatus.maximumOccupancy} participating
+                              {event.ticketStatus?.maximumOccupancy ?? 0} participating
                             </span>
                           </div>
                         </div>

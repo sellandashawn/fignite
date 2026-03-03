@@ -7,7 +7,11 @@ import { Header } from "@/components/header";
 import { getSportById } from "../../api/sports";
 import { Navbar } from "@/components/navbar";
 
-export default function SportDetailPage({ params }: { params: { id: string }; }) {
+export default function SportDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const [quantity, setQuantity] = useState(1);
   const [sportData, setSportData] = useState<any>(null);
   const [sportId, setSportId] = useState<string | null>(null);

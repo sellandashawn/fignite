@@ -16,15 +16,39 @@ import { getAllSports } from "../api/sports";
 import { getCategoriesByType } from "../api/category";
 import { Navbar } from "@/components/navbar";
 
+interface SportCategory {
+  id?: string | number;
+  _id?: string;
+  name: string;
+}
+
+interface SportItem {
+  id: string;
+  sportName?: string;
+  venue?: string;
+  category?: string | SportCategory | number;
+  description?: string;
+  date?: string;
+  createdAt?: string;
+  time?: string;
+  status?: string;
+  image?: string;
+  teamSize?: number;
+  registrationFee?: string | number;
+  participationStatus?: {
+    confirmedParticipants?: number;
+    maximumParticipants?: number;
+  };
+}
 
 export default function SportsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("upcoming");
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [sports, setSports] = useState([]);
+  const [sports, setSports] = useState<SportItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState<SportCategory[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -53,7 +77,7 @@ export default function SportsPage() {
 
   console.log("Sports ", sports);
 
-  const getCategoryName = (categoryIdentifier) => {
+  const getCategoryName = (categoryIdentifier: string | { name?: string } | number | null | undefined) => {
     if (!categoryIdentifier) return "N/A";
 
     if (typeof categoryIdentifier === "string") {
@@ -92,9 +116,9 @@ export default function SportsPage() {
     })
     .sort((a, b) => {
       if (sortBy === "upcoming") {
-        const now = new Date();
-        const aDate = new Date(a.date);
-        const bDate = new Date(b.date);
+        const now = Date.now();
+        const aDate = a.date ? new Date(a.date).getTime() : 0;
+        const bDate = b.date ? new Date(b.date).getTime() : 0;
 
         if (aDate >= now && bDate >= now) {
           return aDate - bDate;
@@ -104,7 +128,9 @@ export default function SportsPage() {
         return bDate - aDate;
       }
       if (sortBy === "newest") {
-        return new Date(b.createdAt) - new Date(a.createdAt);
+        const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bCreated - aCreated;
       }
       if (sortBy === "registration") {
         return (b.participationStatus?.confirmedParticipants || 0) - (a.participationStatus?.confirmedParticipants || 0);
@@ -245,8 +271,9 @@ export default function SportsPage() {
                                   : "bg-primary text-primary-foreground"
                             }`}
                         >
-                          {sport.status?.charAt(0).toUpperCase() +
-                            sport.status?.slice(1) || "Upcoming"}
+                          {sport.status
+                            ? sport.status.charAt(0).toUpperCase() + sport.status.slice(1)
+                            : "Upcoming"}
                         </div>
                         {(sport.status === "cancelled" || sport.status === "postponed") && (
                           <div className="absolute inset-0 bg-black opacity-50 flex items-center justify-center">
@@ -268,7 +295,10 @@ export default function SportsPage() {
                           <div className="flex items-center gap-2 text-muted-foreground text-sm">
                             <Calendar size={16} className="flex-shrink-0" />
                             <span>
-                              {new Date(sport.date).toLocaleDateString()} at {sport.time}
+                              {sport.date
+                                ? new Date(sport.date).toLocaleDateString()
+                                : "N/A"}
+                              {sport.time ? ` at ${sport.time}` : ""}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 text-muted-foreground text-sm">

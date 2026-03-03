@@ -10,6 +10,21 @@ import { ContactSection } from "@/components/contact-section"
 import { Trophy, Users, Target } from "lucide-react"
 import { getAllSports } from "../app/api/sports";
 
+interface SportItem {
+  id?: string;
+  date?: string;
+  time?: string;
+  sportName?: string;
+  venue?: string;
+  image?: string;
+  category?: string;
+  registrationFee?: string | number;
+  participationStatus?: {
+    confirmedParticipants?: number;
+    maximumParticipants?: number;
+  };
+}
+
 const popularSports = [
   {
     title: "Championship Finals",
@@ -32,7 +47,7 @@ const popularSports = [
 ]
 
 export function SportsPage() {
-  const [sports, setSports] = useState([]);
+  const [sports, setSports] = useState<SportItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,8 +57,8 @@ export function SportsPage() {
         const sportsResponse = await getAllSports();
 
         if (sportsResponse && sportsResponse.sports) {
-          const sortedSports = sportsResponse.sports.sort((a, b) =>
-            new Date(a.date) - new Date(b.date)
+          const sortedSports = (sportsResponse.sports as SportItem[]).sort((a, b) =>
+            new Date(a.date ?? 0).getTime() - new Date(b.date ?? 0).getTime()
           );
           setSports(sortedSports);
         }
@@ -59,7 +74,7 @@ export function SportsPage() {
   }, []);
 
   const upcomingSports = sports
-    .filter(sport => new Date(sport.date) > new Date())
+    .filter(sport => sport.date && new Date(sport.date) > new Date())
     .slice(0, 6);
 
   console.log("Sports Data:", sports);
@@ -140,13 +155,14 @@ export function SportsPage() {
                 className="block"
               >
                 <EventCard
-                  title={sport.sportName}
-                  date={`${new Date(sport.date).toLocaleDateString()} at ${sport.time}`}
-                  location={sport.venue}
-                  attendees={`${sport.participationStatus?.confirmedParticipants || 0} / ${sport.participationStatus?.maximumParticipants || 0}`}
-                  price={`LKR ${sport.registrationFee || "0"}`}
+                  title={sport.sportName ?? ""}
+                  date={sport.date
+                    ? `${new Date(sport.date).toLocaleDateString()}${sport.time ? ` at ${sport.time}` : ""}`
+                    : "N/A"}
+                  location={sport.venue ?? ""}
+                  attendees={sport.participationStatus?.confirmedParticipants ?? 0}
+                  price={`LKR ${sport.registrationFee ?? "0"}`}
                   image={sport.image || "/default-sport-image.jpg"}
-                  category={sport.category}
                   type="sport"
                 />
               </Link>

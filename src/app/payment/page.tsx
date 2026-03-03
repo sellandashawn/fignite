@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { Suspense, useEffect, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { CheckCircle, Calendar, MapPin, Download, Share2, User, Clock, Trophy, Users } from "lucide-react"
@@ -53,7 +53,7 @@ interface RegistrationData {
   teamName: string
 }
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isClient, setIsClient] = useState(false)
@@ -547,5 +547,24 @@ export default function PaymentSuccessPage() {
 
       <Footer />
     </main>
+  )
+}
+
+function PaymentLoadingFallback() {
+  return (
+    <main className="min-h-screen flex items-center justify-center bg-background">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    </main>
+  )
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={<PaymentLoadingFallback />}>
+      <PaymentSuccessContent />
+    </Suspense>
   )
 }
