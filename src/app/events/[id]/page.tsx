@@ -124,14 +124,16 @@ export default function EventDetailPage({
     }
   }, [eventId]);
 
-  // Calculate if ticket booking should be shown
+  // Calculate if ticket booking should be shown (include today's events)
   useEffect(() => {
     if (eventData) {
       const eventDate = new Date(eventData.date);
+      eventDate.setHours(0, 0, 0, 0);
       const today = new Date();
-      const isUpcomingOrOngoing = eventDate >= today;
+      today.setHours(0, 0, 0, 0);
+      const isUpcomingOrToday = eventDate.getTime() >= today.getTime();
 
-      setShouldShowTicketBooking(isUpcomingOrOngoing);
+      setShouldShowTicketBooking(isUpcomingOrToday);
     }
   }, [eventData]);
 
