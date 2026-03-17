@@ -1,5 +1,5 @@
 "use client"
- 
+
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { CountdownTimer } from "@/components/countdown-timer"
@@ -74,7 +74,19 @@ export function SportsPage() {
   }, []);
 
   const upcomingSports = sports
-    .filter(sport => sport.date && new Date(sport.date) > new Date())
+    .filter(sport => {
+      if (!sport.date) return false;
+      const sportDate = new Date(sport.date);
+      if (isNaN(sportDate.getTime())) return false;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const threeMonthsLater = new Date(today);
+      threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+
+      return sportDate >= today && sportDate <= threeMonthsLater;
+    })
     .slice(0, 6);
 
   console.log("Sports Data:", sports);

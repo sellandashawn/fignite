@@ -74,10 +74,21 @@ export function EventsPage() {
     fetchData();
   }, []);
 
-  // Get only upcoming events (assuming the API returns events with date field)
   const upcomingEvents = events
-    .filter(event => event.date && new Date(event.date) > new Date()) // Only future events
-    .slice(0, 6); // Get first 6 upcoming events
+    .filter(event => {
+      if (!event.date) return false;
+      const eventDate = new Date(event.date);
+      if (isNaN(eventDate.getTime())) return false;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const threeMonthsLater = new Date(today);
+      threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+
+      return eventDate >= today && eventDate <= threeMonthsLater;
+    })
+    .slice(0, 6);
 
   console.log("Events Data:", events);
 
