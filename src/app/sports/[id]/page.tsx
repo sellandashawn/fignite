@@ -44,10 +44,12 @@ export default function SportDetailPage({
   useEffect(() => {
     if (sportData) {
       const sportDate = new Date(sportData.date);
+      sportDate.setHours(0, 0, 0, 0);
       const today = new Date();
-      const isUpcomingOrOngoing = sportDate >= today;
+      today.setHours(0, 0, 0, 0);
+      const isUpcomingOrToday = sportDate.getTime() >= today.getTime();
 
-      setShouldShowParticipation(isUpcomingOrOngoing);
+      setShouldShowParticipation(isUpcomingOrToday);
     }
   }, [sportData]);
 
@@ -401,7 +403,7 @@ export default function SportDetailPage({
       <footer className="bg-card border-t border-border py-8 sm:py-12 lg:py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 lg:gap-12 mb-8 sm:mb-12">
-          <div>
+            <div>
               <h4 className="font-bold mb-2 sm:mb-4 text-sm sm:text-base">Ignite</h4>
               <p className="text-xs sm:text-sm text-muted-foreground">
                 Connecting athletes and sports worldwide
