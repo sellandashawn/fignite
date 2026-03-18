@@ -57,7 +57,7 @@ export default function SportDetailPage({
     if (!sportData || !sportData.participationStatus) return 0;
 
     const maximumParticipants = sportData.participationStatus.maximumParticipants || 0;
-    const totalParticipants = sportData.participationStatus.totalParticipants || 0;
+    const totalParticipants = sportData.participationStatus.confirmedParticipants || 0;
 
     return Math.max(0, maximumParticipants - totalParticipants);
   };
