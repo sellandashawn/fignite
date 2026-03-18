@@ -68,7 +68,6 @@ export default function GetTicketsPage({
     email: "",
     phone: "",
     agree: false,
-    teamName: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,7 +126,6 @@ export default function GetTicketsPage({
         age: attendee.age,
         gender: attendee.gender,
         email: attendee.attendeeEmail,
-        teamName: form.teamName,
 
       })),
       paymentInfo: {
@@ -167,8 +165,7 @@ export default function GetTicketsPage({
       !form.lastName ||
       !form.email ||
       !form.phone ||
-      !form.agree ||
-      !form.teamName
+      !form.agree
     ) {
       alert("Please fill in all required billing fields.");
       return;
@@ -191,7 +188,6 @@ export default function GetTicketsPage({
           age: attendee.age,
           gender: attendee.gender,
           attendeeEmail: attendee.attendeeEmail,
-          teamName: form.teamName,
         })),
         totalAmount: total,
         eventId: eventId,
@@ -312,21 +308,6 @@ export default function GetTicketsPage({
                   onChange={handleChange}
                   className="border border-border rounded-md px-4 py-2 bg-background"
                   required
-                />
-              </div>
-            </div>
-
-            {/* Team Name */}
-            <div>
-              <h2 className="text-xl font-bold mb-4">Team Information</h2>
-              <div className="mb-4">
-                <input
-                  name="teamName"
-                  placeholder="Team Name"
-                  value={form.teamName}
-                  onChange={handleChange}
-                  required
-                  className="border border-border rounded-md px-4 py-2 bg-background"
                 />
               </div>
             </div>

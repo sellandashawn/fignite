@@ -16,7 +16,7 @@ interface AttendeeInfo {
   age: string
   gender: string
   email: string
-  teamName: string
+  teamName?: string
 }
 
 interface RegistrationData {
@@ -50,7 +50,7 @@ interface RegistrationData {
   eventtime: string
   eventimage: string
   perTicketPrice: number
-  teamName: string
+  teamName?: string
 }
 
 function PaymentSuccessContent() {
@@ -111,9 +111,13 @@ function PaymentSuccessContent() {
             ? String(attendee.gender).toLowerCase()
             : 'other',
           attendeeEmail: attendee.email || '',
-          teamName: attendee.teamName || registration.teamName || '',
+          ...(isSport
+            ? { teamName: attendee.teamName || registration.teamName || '' }
+            : {}),
         })),
-        teamName: registration.attendeeInfo[0]?.teamName || registration.teamName || '',
+        ...(isSport
+          ? { teamName: registration.attendeeInfo[0]?.teamName || registration.teamName || '' }
+          : {}),
         amount: Number(registration.totalAmount),
         numberOfTickets: Number(registration.quantity) || registration.attendeeInfo?.length || 1,
         paymentDate: new Date().toISOString(),
@@ -240,7 +244,9 @@ function PaymentSuccessContent() {
       phone: registrationData.billingInfo.phone
     },
     attendees: registrationData.attendeeInfo,
-    teamName: registrationData.teamName || registrationData.attendeeInfo[0]?.teamName,
+    teamName: isSport
+      ? registrationData.teamName || registrationData.attendeeInfo[0]?.teamName
+      : undefined,
     payment: {
       method: "Credit Card",
       amount: registrationData.paymentInfo.subtotal,
