@@ -3,12 +3,12 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Camera,
+  CameraOff,
   Info,
   CheckCircle2,
   AlertTriangle,
   Loader2,
 } from "lucide-react";
-import { BrowserQRCodeReader } from "@zxing/browser";
 import { scanTicketByQR, getEntityParticipants } from "../../api/participant";
 import { getAllEvents } from "../../api/event";
 import { getAllSports } from "../../api/sports";
@@ -18,7 +18,7 @@ export default function QrScannerPage() {
   const [scanResult, setScanResult] = useState(null);
   const [scanError, setScanError] = useState(null);
   const [lastScannedAt, setLastScannedAt] = useState(null);
-  const [isScanning, setIsScanning] = useState(true);
+  const [isScanning, setIsScanning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [backendResult, setBackendResult] = useState(null);
   const [backendError, setBackendError] = useState(null);
@@ -26,13 +26,58 @@ export default function QrScannerPage() {
   const [events, setEvents] = useState([]);
   const [sports, setSports] = useState([]);
   const [selectedEntityId, setSelectedEntityId] = useState("");
-  const videoRef = useRef(null);
-  const codeReaderRef = useRef(null);
-  const streamRef = useRef(null);
+  const scannerRef = useRef(null);
   const lastSentRawRef = useRef("");
   const isProcessingRef = useRef(false);
   const selectedEntityIdRef = useRef(selectedEntityId);
   selectedEntityIdRef.current = selectedEntityId;
+
+  const clearScannerInstance = useCallback(async () => {
+    const scanner = scannerRef.current;
+    scannerRef.current = null;
+
+    if (scanner && typeof scanner.clear === "function") {
+      try {
+        await scanner.clear();
+      } catch {}
+    }
+  }, []);
+
+  const stopCameraTracks = useCallback(() => {
+    if (typeof document === "undefined") return;
+
+    const container = document.getElementById("qr-reader");
+    if (!container) return;
+
+    container.querySelectorAll("video, audio").forEach((mediaEl) => {
+      const stream = mediaEl.srcObject;
+      if (stream && typeof stream.getTracks === "function") {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+      mediaEl.srcObject = null;
+    });
+
+    container.replaceChildren();
+  }, []);
+
+  const releaseCameraAccess = useCallback(async () => {
+    await clearScannerInstance();
+    stopCameraTracks();
+  }, [clearScannerInstance, stopCameraTracks]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      stopCameraTracks();
+      void clearScannerInstance();
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      void releaseCameraAccess();
+    };
+  }, [clearScannerInstance, releaseCameraAccess, stopCameraTracks]);
 
   useEffect(() => {
     getAllEvents()
@@ -56,67 +101,56 @@ export default function QrScannerPage() {
       try {
         setScanError(null);
 
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        const mod = await import("html5-qrcode");
+        const Html5QrcodeScanner = mod?.Html5QrcodeScanner;
+        if (!Html5QrcodeScanner) {
           setScanError(
-            "Camera API is not supported in this browser. Please use a modern browser like Chrome or Edge.",
+            "QR scanner failed to load. Please refresh the page and try again.",
           );
           return;
         }
 
-        const constraints = {
-          video: {
-            facingMode: "environment",
-          },
-        };
-
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        streamRef.current = stream;
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+        const existing = scannerRef.current;
+        if (existing && typeof existing.clear === "function") {
           try {
-            await videoRef.current.play();
-          } catch (err) {
-            if (err && err.name !== "AbortError") {
-              console.error("Video play error:", err);
-            }
-          }
+            await clearScannerInstance();
+          } catch {}
         }
 
-        const codeReader = new BrowserQRCodeReader();
-        codeReaderRef.current = codeReader;
-
-        const videoInputDevices =
-          await BrowserQRCodeReader.listVideoInputDevices();
-        const deviceId = videoInputDevices[0]?.deviceId;
-
-        await codeReader.decodeFromVideoDevice(
-          deviceId || undefined,
-          videoRef.current,
-          (result, err) => {
-            if (result) {
-              if (isProcessingRef.current) {
-                return;
-              }
-              isProcessingRef.current = true;
-
-              setIsScanning(false);
-
-              const raw = result.getText();
-              setScanError(null);
-              const parsed = parseScanPayload(raw);
-              setScanResult(parsed);
-              setLastScannedAt(new Date());
-
-              if (raw !== lastSentRawRef.current) {
-                lastSentRawRef.current = raw;
-                submitScan(raw, parsed);
-              }
-            } else if (err && !(err.name === "NotFoundException")) {
-              console.error("QR scan error:", err);
-            }
+        const scanner = new Html5QrcodeScanner(
+          "qr-reader",
+          {
+            fps: 12,
+            qrbox: { width: 250, height: 250 },
+            rememberLastUsedCamera: true,
+            aspectRatio: 1.0,
           },
+          false,
         );
+        scannerRef.current = scanner;
+
+        const onScanSuccess = async (decodedText) => {
+          if (isProcessingRef.current) return;
+          isProcessingRef.current = true;
+
+          setIsScanning(false);
+          await releaseCameraAccess();
+
+          const raw = decodedText;
+          setScanError(null);
+          const parsed = parseScanPayload(raw);
+          setScanResult(parsed);
+          setLastScannedAt(new Date());
+
+          if (raw !== lastSentRawRef.current) {
+            lastSentRawRef.current = raw;
+            submitScan(raw, parsed);
+          }
+        };
+
+        const onScanFailure = () => {};
+
+        scanner.render(onScanSuccess, onScanFailure);
       } catch (error) {
         console.error("QR setup error:", error);
         setScanError(
@@ -128,19 +162,9 @@ export default function QrScannerPage() {
     setupScanner();
 
     return () => {
-      if (
-        codeReaderRef.current &&
-        typeof codeReaderRef.current.reset === "function"
-      ) {
-        codeReaderRef.current.reset();
-        codeReaderRef.current = null;
-      }
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-        streamRef.current = null;
-      }
+      void releaseCameraAccess();
     };
-  }, [isScanning]);
+  }, [clearScannerInstance, isScanning, releaseCameraAccess]);
 
   const loadStats = useCallback(async () => {
     if (!selectedEntityId) return;
@@ -201,6 +225,20 @@ export default function QrScannerPage() {
     loadStats();
   }, [loadStats]);
 
+  useEffect(() => {
+    if (!selectedEntityId) {
+      setIsScanning(false);
+      void releaseCameraAccess();
+      return;
+    }
+
+    if (!scanResult && !backendResult && !backendError) {
+      setScanError(null);
+      isProcessingRef.current = false;
+      setIsScanning(true);
+    }
+  }, [selectedEntityId, scanResult, backendResult, backendError, releaseCameraAccess]);
+
   const clearResult = () => {
     setScanResult(null);
     setScanError(null);
@@ -208,6 +246,21 @@ export default function QrScannerPage() {
     setBackendResult(null);
     setBackendError(null);
     lastSentRawRef.current = "";
+    isProcessingRef.current = false;
+    setIsScanning(Boolean(selectedEntityIdRef.current));
+  };
+
+  const handleRemoveCameraAccess = async () => {
+    setIsScanning(false);
+    await releaseCameraAccess();
+  };
+
+  const handleEnableCamera = () => {
+    if (!selectedEntityIdRef.current) {
+      setScanError("Please select an event or sport before enabling the camera.");
+      return;
+    }
+    setScanError(null);
     isProcessingRef.current = false;
     setIsScanning(true);
   };
@@ -234,23 +287,35 @@ export default function QrScannerPage() {
               Live camera scanner
             </h2>
 
+            <div className="mb-4 flex justify-end">
+              <button
+                type="button"
+                onClick={
+                  isScanning ? handleRemoveCameraAccess : handleEnableCamera
+                }
+                disabled={!selectedEntityId && !isScanning}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isScanning ? <CameraOff size={16} /> : <Camera size={16} />}
+                {isScanning ? "Turn off camera" : "Enable camera"}
+              </button>
+            </div>
+
             <div className="relative overflow-hidden rounded-2xl bg-slate-900/95 p-4">
               <div className="absolute inset-4 rounded-2xl border-2 border-primary/80 pointer-events-none" />
 
               <div className="aspect-square w-full max-w-md mx-auto rounded-xl overflow-hidden bg-black/80 flex items-center justify-center">
-                <video
-                  ref={videoRef}
-                  className="w-full h-full object-cover"
-                  muted
-                  playsInline
-                />
+                <div id="qr-reader" className="w-full h-full" />
               </div>
 
               <div className="mt-4 flex items-center gap-2 text-xs text-slate-200/80">
                 <Camera size={16} className="text-primary/80" />
                 <span>
-                  Position the QR code inside the frame. The scan will happen
-                  automatically once the code is in focus.
+                  {isScanning
+                    ? "Position the QR code inside the frame. The scan will happen automatically once the code is in focus."
+                    : selectedEntityId
+                      ? "Camera access is off. Use Enable camera when you want to scan again."
+                      : "Select an event or sport first to activate the camera."}
                 </span>
               </div>
             </div>
