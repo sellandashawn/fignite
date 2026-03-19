@@ -77,7 +77,7 @@ const getCategoryName = (categoryIdentifier, categories = []) => {
   // If it's a string, try to match by name
   if (typeof categoryIdentifier === "string") {
     const foundCategory = categories.find(
-      (cat) => cat.name === categoryIdentifier
+      (cat) => cat.name === categoryIdentifier,
     );
     if (foundCategory) return categoryIdentifier;
   }
@@ -92,7 +92,7 @@ const getCategoryName = (categoryIdentifier, categories = []) => {
     (cat) =>
       cat.id === categoryIdentifier ||
       cat._id === categoryIdentifier ||
-      cat.name === categoryIdentifier
+      cat.name === categoryIdentifier,
   );
 
   return category ? category.name : "General";
@@ -206,9 +206,7 @@ const filterSports = (sports, filters, categories = []) => {
     // Filter by search term
     if (
       filters.searchTerm &&
-      !sport.sportName
-        ?.toLowerCase()
-        .includes(filters.searchTerm.toLowerCase())
+      !sport.sportName?.toLowerCase().includes(filters.searchTerm.toLowerCase())
     ) {
       return false;
     }
@@ -297,49 +295,98 @@ const filterPayments = (payments, filters) => {
   });
 };
 
-// Calculate aggregated stats from filtered events and sports
+// Calculate aggregated stats from filtered events, sports and participants
 const calculateAggregatedStats = (
   filteredEvents,
   filteredPayments,
-  filteredSports = []
+  filteredSports = [],
+  allParticipants = [],
 ) => {
   let totalMaximumOccupancy = 0;
   let totalPlayers = 0;
-  let totalUnscannedTickets = 0;
-  let totalSuccessfulPayments = 0;
 
-  // Calculate from events
+  // Basic capacity + player counts from events
   filteredEvents.forEach((event) => {
     totalMaximumOccupancy += event.ticketStatus?.maximumOccupancy || 0;
     totalPlayers += event.ticketStatus?.totalNumberOfPlayers || 0;
-    totalUnscannedTickets += event.ticketStatus?.unscannedTickets || 0;
-    totalSuccessfulPayments += event.ticketStatus?.successfulPayment || 0;
   });
 
-  // Calculate from sports (map participationStatus to event-style fields)
+  // Capacity + player counts from sports (map participationStatus)
   filteredSports.forEach((sport) => {
     totalMaximumOccupancy +=
       sport.participationStatus?.maximumParticipants || 0;
     totalPlayers += sport.participationStatus?.confirmedParticipants || 0;
-    // Sports currently don't track unscanned tickets or successful payment
   });
 
-  // Also count from payments if available
-  const successfulPaymentsFromPayments = filteredPayments.filter(
-    (payment) => payment.status === "completed" || payment.status === "success"
-  ).length;
-
-  // Use the higher value between events and payments for successful payments
-  totalSuccessfulPayments = Math.max(
-    totalSuccessfulPayments,
-    successfulPaymentsFromPayments
+  // Build lookup sets for filtered entities
+  const eventIds = new Set(
+    filteredEvents.map((e) => e.id || e._id || e.eventId),
   );
+  const sportIds = new Set(
+    filteredSports.map((s) => s.id || s._id || s.sportId),
+  );
+
+  // Aggregate ticket + payment stats from participant records
+  let soldTickets = 0;
+  let scannedTickets = 0;
+  let successfulOrders = 0;
+
+  allParticipants.forEach((p) => {
+    const isSport = !!p.isSport;
+
+    const entityId = isSport
+      ? p.sport?.id || p.sport?._id || p.sportId
+      : p.event?.id || p.event?._id || p.eventId;
+
+    if (!entityId) return;
+    if (isSport && !sportIds.has(entityId)) return;
+    if (!isSport && !eventIds.has(entityId)) return;
+
+    const tickets = Number(p.numberOfTickets || 0);
+    const scanned = Number(p.scannedTickets || 0);
+
+    if (p.paymentStatus === "successful") {
+      successfulOrders += 1;
+      soldTickets += tickets;
+    }
+
+    scannedTickets += scanned;
+  });
+
+  const remainingTickets = Math.max(0, soldTickets - scannedTickets);
+
+  // Fallback: if we somehow have no participants in scope, fall back to event stats + payments
+  let fallbackUnscannedTickets = 0;
+  let fallbackSuccessfulPayments = 0;
+
+  if (successfulOrders === 0 && soldTickets === 0 && scannedTickets === 0) {
+    filteredEvents.forEach((event) => {
+      fallbackUnscannedTickets += event.ticketStatus?.unscannedTickets || 0;
+      fallbackSuccessfulPayments += event.ticketStatus?.successfulPayment || 0;
+    });
+
+    const successfulPaymentsFromPayments = filteredPayments.filter(
+      (payment) =>
+        payment.status === "completed" || payment.status === "success",
+    ).length;
+
+    fallbackSuccessfulPayments = Math.max(
+      fallbackSuccessfulPayments,
+      successfulPaymentsFromPayments,
+    );
+  }
 
   return {
     maximumOccupancy: totalMaximumOccupancy,
-    totalPlayers: totalPlayers,
-    unscannedTickets: totalUnscannedTickets,
-    successfulPayments: totalSuccessfulPayments,
+    totalPlayers,
+    unscannedTickets:
+      successfulOrders === 0 && soldTickets === 0 && scannedTickets === 0
+        ? fallbackUnscannedTickets
+        : remainingTickets,
+    successfulPayments:
+      successfulOrders === 0 && soldTickets === 0 && scannedTickets === 0
+        ? fallbackSuccessfulPayments
+        : successfulOrders,
   };
 };
 
@@ -347,7 +394,7 @@ const calculateAggregatedStats = (
 const generateAggregateChartData = (
   filteredEvents,
   allParticipants,
-  filteredSports = []
+  filteredSports = [],
 ) => {
   const months = [
     "Jan",
@@ -413,8 +460,7 @@ const generateAggregateChartData = (
 
     const monthData = chartData.find((m) => m.name === monthName);
     if (monthData) {
-      const confirmed =
-        sport.participationStatus?.confirmedParticipants || 0;
+      const confirmed = sport.participationStatus?.confirmedParticipants || 0;
       monthData.registrations += confirmed;
       monthData.sales += confirmed;
       // Engagement and revenue aren't currently tracked for sports
@@ -427,7 +473,7 @@ const generateAggregateChartData = (
 // Generate aggregate participation rate (events + sports)
 const generateAggregateParticipationRate = (
   filteredEvents,
-  filteredSports = []
+  filteredSports = [],
 ) => {
   let totalMaximumOccupancy = 0;
   let totalPlayers = 0;
@@ -445,7 +491,7 @@ const generateAggregateParticipationRate = (
 
   const participationRate = calculateParticipationRate(
     totalPlayers,
-    totalMaximumOccupancy
+    totalMaximumOccupancy,
   );
 
   return [
@@ -552,8 +598,32 @@ export default function DashBoard() {
 
     // If a specific event is selected
     if (event && event.ticketStatus) {
-      // Count successful payments from user data
-      const successfulPaymentsCount = userData.length;
+      const successfulPaymentsCount = userData.filter(
+        (p) => p?.paymentStatus === "successful",
+      ).length;
+
+      let soldTickets = 0;
+      let scannedTickets = 0;
+
+      userData.forEach((p) => {
+        const tickets = Number(p?.numberOfTickets || 0);
+        const scanned = Number(p?.scannedTickets || 0);
+
+        // Only "successful" orders should contribute to sold tickets.
+        if (p?.paymentStatus === "successful") {
+          soldTickets += tickets;
+        }
+        scannedTickets += scanned;
+      });
+
+      const remainingTickets = Math.max(0, soldTickets - scannedTickets);
+      const canComputeFromParticipants =
+        userData.some(
+          (p) =>
+            typeof p?.paymentStatus === "string" ||
+            p?.scannedTickets != null ||
+            p?.numberOfTickets != null,
+        ) && userData.length > 0;
 
       return [
         {
@@ -568,15 +638,16 @@ export default function DashBoard() {
         },
         {
           label: "Unscanned tickets",
-          value: event.ticketStatus.unscannedTickets || 0,
+          value: canComputeFromParticipants
+            ? remainingTickets
+            : event.ticketStatus.unscannedTickets || 0,
           Icon: Ticket,
         },
         {
           label: "Successful Payment",
-          value:
-            successfulPaymentsCount > 0
-              ? successfulPaymentsCount
-              : event.ticketStatus.successfulPayment || 0,
+          value: canComputeFromParticipants
+            ? successfulPaymentsCount
+            : event.ticketStatus.successfulPayment || 0,
           Icon: CheckCircle,
         },
       ];
@@ -592,7 +663,7 @@ export default function DashBoard() {
     const filtered = filterEvents(
       events,
       { ...filters, searchTerm },
-      categories
+      categories,
     );
     setFilteredEvents(filtered);
   }, [events, filters, searchTerm, categories]);
@@ -601,7 +672,7 @@ export default function DashBoard() {
     const filtered = filterSports(
       sports,
       { ...filters, searchTerm },
-      categories
+      categories,
     );
     setFilteredSports(filtered);
   }, [sports, filters, searchTerm, categories]);
@@ -617,7 +688,8 @@ export default function DashBoard() {
       const aggregated = calculateAggregatedStats(
         filteredEvents,
         filteredPayments,
-        filteredSports
+        filteredSports,
+        allParticipants,
       );
       setAggregatedStats(aggregated);
 
@@ -635,31 +707,20 @@ export default function DashBoard() {
   useEffect(() => {
     const fetchAllParticipants = async () => {
       try {
-        // Fetch participants for all events
-        const allParticipantsData = [];
-        for (const event of events) {
-          try {
-            const response = await getEventParticipants(event.id);
-            if (response && response.data && response.data.participants) {
-              allParticipantsData.push(...response.data.participants);
-            }
-          } catch (error) {
-            console.error(
-              `Error fetching participants for event ${event.id}:`,
-              error
-            );
-          }
-        }
-        setAllParticipants(allParticipantsData);
+        // Fetch participants for all events and sports in a single request
+        const response = await getEventParticipants();
+        const participants =
+          response?.data?.participants ||
+          response?.data?.data?.participants ||
+          [];
+        setAllParticipants(participants);
       } catch (error) {
         console.error("Error fetching all participants:", error);
       }
     };
 
-    if (events.length > 0) {
-      fetchAllParticipants();
-    }
-  }, [events]);
+    fetchAllParticipants();
+  }, []);
 
   useEffect(() => {
     if (
@@ -670,12 +731,14 @@ export default function DashBoard() {
       const aggregateChartData = generateAggregateChartData(
         filteredEvents,
         allParticipants,
-        filteredSports
+        filteredSports,
       );
       setDynamicChartData(aggregateChartData);
 
-      const aggregateParticipationRate =
-        generateAggregateParticipationRate(filteredEvents, filteredSports);
+      const aggregateParticipationRate = generateAggregateParticipationRate(
+        filteredEvents,
+        filteredSports,
+      );
       setParticipationRate(aggregateParticipationRate);
     } else if (selectedEvent && userdata.length > 0) {
       const registrationByMonth = groupByMonth(userdata, "createdAt");
@@ -699,7 +762,7 @@ export default function DashBoard() {
       // Populate with actual data for this event
       registrationByMonth.forEach((monthData) => {
         const monthIndex = eventChartData.findIndex(
-          (m) => m.name === monthData.name
+          (m) => m.name === monthData.name,
         );
         if (monthIndex !== -1) {
           eventChartData[monthIndex].registrations = monthData.registrations;
@@ -711,7 +774,7 @@ export default function DashBoard() {
           const totalPlayers =
             selectedEvent.ticketStatus?.totalNumberOfPlayers || 0;
           eventChartData[monthIndex].engagement = Math.round(
-            (totalPlayers / maxOccupancy) * 100
+            (totalPlayers / maxOccupancy) * 100,
           );
 
           // Calculate revenue (sum of payments for this event)
@@ -745,7 +808,7 @@ export default function DashBoard() {
 
             const totalRevenue = eventPayments.reduce(
               (sum, payment) => sum + (payment.amount || 0),
-              0
+              0,
             );
             eventChartData[monthIndex].revenue = totalRevenue;
           }
@@ -808,7 +871,7 @@ export default function DashBoard() {
           sportChartData[idx].sales = confirmed;
           sportChartData[idx].engagement = calculateParticipationRate(
             confirmed,
-            maxParticipants
+            maxParticipants,
           );
         }
       }
@@ -870,7 +933,7 @@ export default function DashBoard() {
               eventId: event.id,
               totalAmount: totalAmount,
             };
-          })
+          }),
         );
 
         setEventPerformance(performanceData);
@@ -933,7 +996,7 @@ export default function DashBoard() {
     fetchEvents();
   }, []);
 
-  const handleRowClick = (item) => {
+  const handleRowClick = async (item) => {
     setShowAggregateView(false);
     setAggregatedStats(null);
     setUserData([]);
@@ -949,22 +1012,36 @@ export default function DashBoard() {
       setSelectedEvent(null);
       setSelectedSport(sport);
 
-      // Map sport participationStatus to ticket-style stats for cards
+      const sportId = sport.id || sport._id;
+
+      // Map sport ticket-style stats for cards based on actual participant records
       const fakeEventForStats = {
         ticketStatus: {
-          maximumOccupancy:
-            sport.participationStatus?.maximumParticipants || 0,
+          maximumOccupancy: sport.participationStatus?.maximumParticipants || 0,
           totalNumberOfPlayers:
             sport.participationStatus?.confirmedParticipants || 0,
-          unscannedTickets:
-            sport.participationStatus?.pendingRegistrations || 0,
-          successfulPayment:
-            sport.participationStatus?.confirmedParticipants || 0,
+          // Filled from participant records below (see getEventStats()).
+          unscannedTickets: 0,
+          successfulPayment: 0,
         },
       };
 
-      const sportStats = getEventStats(fakeEventForStats, []);
-      setStats(sportStats);
+      try {
+        const response = await getEventParticipants(null, sportId);
+        const participants =
+          response?.data?.participants ||
+          response?.data?.data?.participants ||
+          [];
+
+        const sportStats = getEventStats(fakeEventForStats, participants);
+        setStats(sportStats);
+      } catch (error) {
+        console.error(
+          `Error fetching participants for sport ${sportId}:`,
+          error,
+        );
+        setStats(getEventStats(fakeEventForStats, []));
+      }
 
       console.log("Selected sport:", sport);
     }
@@ -1111,9 +1188,9 @@ export default function DashBoard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
       <div className="max-w-7xl mx-auto">
-      <h1 className="text-4xl font-bold bg-gradient-to-r from-primary/90 to-primary/70 bg-clip-text text-transparent mb-2">
-Dashboard
-                </h1>
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-primary/90 to-primary/70 bg-clip-text text-transparent mb-2">
+          Dashboard
+        </h1>
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
           <div className="flex gap-4 items-center mb-6">
             <div className="flex-1 relative">
@@ -1374,8 +1451,8 @@ Dashboard
                       ? listFilter === "sports"
                         ? "View Sports"
                         : listFilter === "events"
-                        ? "View Events"
-                        : "View All"
+                          ? "View Events"
+                          : "View All"
                       : "View Overall"}
                   </button>
                 )}
@@ -1401,57 +1478,57 @@ Dashboard
                         const isSelected = isEvent
                           ? selectedEvent?.id === item.id
                           : isSport
-                          ? selectedSport?.id === item.id ||
-                            selectedSport?._id === item.id
-                          : false;
+                            ? selectedSport?.id === item.id ||
+                              selectedSport?._id === item.id
+                            : false;
 
                         return (
-                        <tr
-                          key={item.id || idx}
-                          className={`border-t border-primary/10 transition-all hover:bg-primary/5 hover:shadow-md ${
-                            isSelected
-                              ? "bg-primary/20 ring-2 ring-primary/30 border-l-4 border-l-primary shadow-lg"
-                              : "bg-white"
-                          } ${
-                            showAggregateView ? "opacity-50" : ""
-                          } cursor-pointer`}
-                          onClick={
-                            !showAggregateView
-                              ? () => handleRowClick(item)
-                              : undefined
-                          }
-                        >
-                          <td className="px-6 py-4 font-medium">
-                            {isSelected && (
-                              <span className="inline-block w-2 h-2 bg-primary rounded-full mr-2"></span>
-                            )}
-                            {item.name}
-                            {isEvent && isSelected && (
-                              <span className="ml-2 text-xs text-primary font-semibold">
-                                SELECTED
+                          <tr
+                            key={item.id || idx}
+                            className={`border-t border-primary/10 transition-all hover:bg-primary/5 hover:shadow-md ${
+                              isSelected
+                                ? "bg-primary/20 ring-2 ring-primary/30 border-l-4 border-l-primary shadow-lg"
+                                : "bg-white"
+                            } ${
+                              showAggregateView ? "opacity-50" : ""
+                            } cursor-pointer`}
+                            onClick={
+                              !showAggregateView
+                                ? () => handleRowClick(item)
+                                : undefined
+                            }
+                          >
+                            <td className="px-6 py-4 font-medium">
+                              {isSelected && (
+                                <span className="inline-block w-2 h-2 bg-primary rounded-full mr-2"></span>
+                              )}
+                              {item.name}
+                              {isEvent && isSelected && (
+                                <span className="ml-2 text-xs text-primary font-semibold">
+                                  SELECTED
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 capitalize">
+                              {item.type}
+                            </td>
+                            <td className="px-6 py-4">
+                              {new Date(item.date).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4">
+                              {getCategoryName(item.category, categories)}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span
+                                className={`px-4 py-1 rounded-full text-xs font-semibold ${getStatusClasses(
+                                  item.status,
+                                )}`}
+                              >
+                                {item.status?.charAt(0).toUpperCase() +
+                                  item.status?.slice(1)}
                               </span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 capitalize">
-                            {item.type}
-                          </td>
-                          <td className="px-6 py-4">
-                            {new Date(item.date).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4">
-                            {getCategoryName(item.category, categories)}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span
-                              className={`px-4 py-1 rounded-full text-xs font-semibold ${getStatusClasses(
-                                item.status
-                              )}`}
-                            >
-                              {item.status?.charAt(0).toUpperCase() +
-                                item.status?.slice(1)}
-                            </span>
-                          </td>
-                        </tr>
+                            </td>
+                          </tr>
                         );
                       })
                     ) : (
@@ -1642,21 +1719,21 @@ Dashboard
                 )}
                 {showAggregateView &&
                   (filteredEvents.length > 0 || filteredSports.length > 0) && (
-                  <div className="mt-2 text-center text-sm text-slate-600">
-                    <p>
-                      Total Maximum Occupancy:{" "}
-                      {aggregatedStats?.maximumOccupancy || 0}
-                    </p>
-                    <p>
-                      Total Players (Events &amp; Sports):{" "}
-                      {aggregatedStats?.totalPlayers || 0}
-                    </p>
-                    <p className="font-semibold">
-                      Aggregate Participation Rate:{" "}
-                      {participationRateToUse[0]?.value || 0}%
-                    </p>
-                  </div>
-                )}
+                    <div className="mt-2 text-center text-sm text-slate-600">
+                      <p>
+                        Total Maximum Occupancy:{" "}
+                        {aggregatedStats?.maximumOccupancy || 0}
+                      </p>
+                      <p>
+                        Total Players (Events &amp; Sports):{" "}
+                        {aggregatedStats?.totalPlayers || 0}
+                      </p>
+                      <p className="font-semibold">
+                        Aggregate Participation Rate:{" "}
+                        {participationRateToUse[0]?.value || 0}%
+                      </p>
+                    </div>
+                  )}
               </div>
             </div>
 
@@ -1715,8 +1792,6 @@ Dashboard
             </div>
           </div>
         </div>
-
-        
       </div>
     </div>
   );
