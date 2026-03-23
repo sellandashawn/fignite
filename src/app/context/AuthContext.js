@@ -1,4 +1,5 @@
 "use client";
+import axios from "axios";
 import { useRouter } from "next/navigation";
 import { createContext, useState, useEffect } from "react";
 import { isAdminFromToken } from "../utils/tokenUtils";
@@ -36,6 +37,27 @@ export const AuthProvider = ({ children }) => {
 
     setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    const id = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status !== 401) return Promise.reject(error);
+        const auth =
+          error.config?.headers?.Authorization ??
+          error.config?.headers?.authorization;
+        if (typeof auth !== "string" || !auth.startsWith("Bearer ")) {
+          return Promise.reject(error);
+        }
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setUser(null);
+        router.push("/login");
+        return Promise.reject(error);
+      }
+    );
+    return () => axios.interceptors.response.eject(id);
+  }, [router]);
 
   const login = (userData, token) => {
     if (isAdminFromToken(token)) {
