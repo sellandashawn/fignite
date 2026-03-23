@@ -27,7 +27,7 @@ export default function Sidebar({ activeMenu, setActiveMenu }) {
   ];
 
   return (
-    <div className="w-[70] min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white p-6 shadow-2xl border-r border-slate-700">
+    <div className="w-72 shrink-0 min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white p-6 shadow-2xl border-r border-slate-700">
       <div className="my-8">
         <div className="flex items-center justify-center gap-3 mb-2">
           <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/30">
@@ -46,7 +46,7 @@ export default function Sidebar({ activeMenu, setActiveMenu }) {
             onClick={() => setActiveMenu(id)}
             className={`w-full px-4 py-3 rounded-lg flex items-center gap-3 transition-all duration-300 ${
               activeMenu === id
-                ? "bg-primary/90 text-white shadow-lg shadow-primary/40 scale-105"
+                ? "bg-primary/90 text-white shadow-lg shadow-primary/40"
                 : "text-slate-300 hover:text-white hover:bg-slate-700/50"
             }`}
           >
