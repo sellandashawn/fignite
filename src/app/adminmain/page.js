@@ -42,9 +42,9 @@ export default function AdminMain() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen min-w-0">
       <Sidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
-      <div className="flex-1">
+      <div className="flex-1 min-w-0 overflow-x-auto">
         {activeMenu === "eventDetails" && <EventDetails />}
         {activeMenu === "categoryDetails" && <CategoryDetails />}
         {activeMenu === "paymentDetails" && <PaymentDetails />}

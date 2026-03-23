@@ -1242,9 +1242,9 @@ export default function DashBoard() {
             </div> */}
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-4">
             {/* Date From */}
-            <div className="flex-1">
+            <div className="min-w-[140px] flex-1 basis-[140px]">
               <label className="block text-sm font-semibold text-slate-700 mb-3">
                 Date From
               </label>
@@ -1265,7 +1265,7 @@ export default function DashBoard() {
             </div>
 
             {/* Date To */}
-            <div className="flex-1">
+            <div className="min-w-[140px] flex-1 basis-[140px]">
               <label className="block text-sm font-semibold text-slate-700 mb-3">
                 Date To
               </label>
@@ -1284,7 +1284,7 @@ export default function DashBoard() {
             </div>
 
             {/* Month */}
-            <div className="flex-1">
+            <div className="min-w-[140px] flex-1 basis-[140px]">
               <label className="block text-sm font-semibold text-slate-700 mb-3">
                 Month
               </label>
@@ -1303,7 +1303,7 @@ export default function DashBoard() {
             </div>
 
             {/* Event Category */}
-            <div className="flex-1">
+            <div className="min-w-[140px] flex-1 basis-[140px]">
               <label className="block text-sm font-semibold text-slate-700 mb-3">
                 Event Category
               </label>
@@ -1333,7 +1333,7 @@ export default function DashBoard() {
             </div>
 
             {/* Status Filter */}
-            <div className="flex-1">
+            <div className="min-w-[140px] flex-1 basis-[140px]">
               <label className="block text-sm font-semibold text-slate-700 mb-3">
                 Status
               </label>
@@ -1356,7 +1356,7 @@ export default function DashBoard() {
               </div>
             </div>
 
-            <div className="flex-1 flex items-end">
+            <div className="min-w-[140px] flex-1 basis-[140px] flex items-end">
               <div className="w-full flex justify-center">
                 <button
                   onClick={clearFilters}
