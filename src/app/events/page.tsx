@@ -361,7 +361,7 @@ export default function EventsPage() {
                         </div>
                         <div className="flex justify-between items-center pt-4 border-t border-border">
                           <span className="font-bold text-primary">
-                            $ {event.perTicketPrice}
+                            LKR {event.perTicketPrice}
                           </span>
                           <button className="text-primary hover:text-primary/80 transition font-semibold text-sm">
                             ATTEND
@@ -415,7 +415,7 @@ export default function EventsPage() {
       <footer className="bg-card border-t border-border py-16 px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-12 mb-12">
-          <div>
+            <div>
               <h4 className="font-bold mb-4">Ignite</h4>
               <p className="text-muted-foreground text-sm">
                 Connecting athletes and events worldwide

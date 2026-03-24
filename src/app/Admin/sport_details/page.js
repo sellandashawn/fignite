@@ -621,7 +621,7 @@ export default function SportsDetails() {
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-600">
                             <div className="flex items-center gap-1">
-                              $ {sport.registrationFee || "0.00"}
+                              LKR {sport.registrationFee || "0.00"}
                             </div>
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-600">

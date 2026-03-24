@@ -411,6 +411,13 @@ const generateAggregateChartData = (
     "Dec",
   ];
 
+  const eventIds = new Set(
+    filteredEvents.map((e) => e.id || e._id || e.eventId),
+  );
+  const sportIds = new Set(
+    filteredSports.map((s) => s.id || s._id || s.sportId),
+  );
+
   // Initialize chart data with all months
   const chartData = months.map((month) => ({
     name: month,
@@ -420,8 +427,23 @@ const generateAggregateChartData = (
     revenue: 0,
   }));
 
-  // Process all participants for aggregate data (events)
+  // Match calculateAggregatedStats: only successful orders in filtered scope (no double-count from sport aggregates)
   allParticipants.forEach((participant) => {
+    if (participant.paymentStatus !== "successful") return;
+
+    const isSport = !!participant.isSport;
+    const entityId = isSport
+      ? participant.sport?.id ||
+        participant.sport?._id ||
+        participant.sportId
+      : participant.event?.id ||
+        participant.event?._id ||
+        participant.eventId;
+
+    if (!entityId) return;
+    if (isSport && !sportIds.has(entityId)) return;
+    if (!isSport && !eventIds.has(entityId)) return;
+
     const date = new Date(participant.createdAt);
     const monthIndex = date.getMonth();
     const monthName = months[monthIndex];
@@ -429,7 +451,7 @@ const generateAggregateChartData = (
     const monthData = chartData.find((m) => m.name === monthName);
     if (monthData) {
       monthData.registrations += 1;
-      monthData.sales += participant.numberOfTickets || 1;
+      monthData.sales += Number(participant.numberOfTickets) || 1;
     }
   });
 
@@ -448,22 +470,6 @@ const generateAggregateChartData = (
 
       // Aggregate revenue (you might need to adjust this based on your payment data structure)
       monthData.revenue += event.ticketStatus?.successfulPayment || 0;
-    }
-  });
-
-  // Add sports into chart data using their participationStatus and date
-  filteredSports.forEach((sport) => {
-    if (!sport.date) return;
-    const date = new Date(sport.date);
-    const monthIndex = date.getMonth();
-    const monthName = months[monthIndex];
-
-    const monthData = chartData.find((m) => m.name === monthName);
-    if (monthData) {
-      const confirmed = sport.participationStatus?.confirmedParticipants || 0;
-      monthData.registrations += confirmed;
-      monthData.sales += confirmed;
-      // Engagement and revenue aren't currently tracked for sports
     }
   });
 
@@ -701,7 +707,7 @@ export default function DashBoard() {
       // Reset to default stats when no events match filters
       setStats(defaultStats);
     }
-  }, [filteredEvents, filteredSports, filteredPayments]);
+  }, [filteredEvents, filteredSports, filteredPayments, allParticipants]);
 
   // Fetch all participants for aggregate data
   useEffect(() => {
@@ -741,7 +747,10 @@ export default function DashBoard() {
       );
       setParticipationRate(aggregateParticipationRate);
     } else if (selectedEvent && userdata.length > 0) {
-      const registrationByMonth = groupByMonth(userdata, "createdAt");
+      const registrationByMonth = groupByMonth(
+        userdata.filter((p) => p.paymentStatus === "successful"),
+        "createdAt",
+      );
 
       // Create chart data for this specific event
       const eventChartData = [
