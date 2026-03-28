@@ -31,7 +31,7 @@ export default function Sidebar({ activeMenu, setActiveMenu }) {
       <div className="my-8">
         <div className="flex items-center justify-center gap-3 mb-2">
           <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/30">
-            <span className="text-white font-bold text-sm">GS</span>
+            <span className="text-white font-bold text-sm">I</span>
           </div>
           <span className="font-bold text-xl text-white">Ignite</span>
         </div>

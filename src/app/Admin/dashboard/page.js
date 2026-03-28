@@ -569,7 +569,7 @@ export default function DashBoard() {
   // Default stats when no event is selected
   const defaultStats = [
     { label: "Maximum Occupancy", value: "-", Icon: BarChartIcon },
-    { label: "Total number of players", value: "-", Icon: Users },
+    { label: "Total number of participants", value: "-", Icon: Users },
     { label: "Unscanned tickets", value: "-", Icon: Ticket },
     { label: "Successful Payment", value: "-", Icon: CheckCircle },
   ];
@@ -585,7 +585,7 @@ export default function DashBoard() {
           Icon: BarChartIcon,
         },
         {
-          label: "Total number of players",
+          label: "Total number of participants",
           value: aggregatedData.totalPlayers,
           Icon: Users,
         },
@@ -638,7 +638,7 @@ export default function DashBoard() {
           Icon: BarChartIcon,
         },
         {
-          label: "Total number of players",
+          label: "Total number of particpants",
           value: event.ticketStatus.totalNumberOfPlayers || 0,
           Icon: Users,
         },
